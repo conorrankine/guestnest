@@ -85,3 +85,10 @@ def _set_coords(
     conf = mol.GetConformer(conf_idx)
     for i, (x, y, z) in enumerate(coords):
         conf.SetAtomPosition(i, (x, y, z))
+
+def translate(
+    coords: np.ndarray,
+    distances: np.ndarray
+) -> np.ndarray:
+    
+    return coords + distances
