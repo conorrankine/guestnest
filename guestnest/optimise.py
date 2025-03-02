@@ -57,7 +57,7 @@ def optimise_fit(
     )
 
     opt = basinhopping(
-        objective_function,
+        _objective_function,
         x0,
         niter = niter,
         minimizer_kwargs = {
@@ -68,7 +68,7 @@ def optimise_fit(
     )
 
     opt_distances, opt_angles = np.split(opt.x, 2)
-    opt_guest_coords = transform_coords(
+    opt_guest_coords = _transform_coords(
         guest_coords, opt_distances, opt_angles
     )
     _set_coords(guest, opt_guest_coords)
@@ -77,20 +77,20 @@ def optimise_fit(
     
     return host_guest_complex
 
-def objective_function(
+def _objective_function(
     x,
     host_coords: np.ndarray,
     guest_coords: np.ndarray
 ) -> float:
        
     distances, angles = np.split(x, 2)
-    transformed_guest_coords = transform_coords(
+    transformed_guest_coords = _transform_coords(
         guest_coords, distances, angles
     )
     
-    return penalty_function(host_coords, transformed_guest_coords)
+    return _penalty_function(host_coords, transformed_guest_coords)
 
-def penalty_function(
+def _penalty_function(
     host_coords: np.ndarray,
     guest_coords: np.ndarray,
     close_contact_threshold: float = 1.5
@@ -110,7 +110,7 @@ def penalty_function(
         
     return penalty
 
-def transform_coords(
+def _transform_coords(
     coords: np.ndarray,
     distances: np.ndarray,
     angles: np.ndarray
