@@ -27,6 +27,17 @@ from scipy.optimize import basinhopping
 ################################## FUNCTIONS ##################################
 ###############################################################################
 
+def centre(
+    mol: Chem.Mol,
+    conf_idx: int = -1
+) -> None:
+    
+    centre_of_mass = _get_centre_of_mass(mol, conf_idx = conf_idx)
+    centred_coords = _translate(
+        _get_coords(mol, conf_idx = conf_idx), -1.0 * centre_of_mass
+    )
+    _set_coords(mol, centred_coords, conf_idx = conf_idx)
+
 def optimise_fit(
     host: Chem.Mol,
     guest: Chem.Mol,
