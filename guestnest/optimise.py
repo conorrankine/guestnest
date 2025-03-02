@@ -107,6 +107,19 @@ def transform_coords(
     
     return _translate(_rotate(coords, angles,), distances)
 
+def _get_centre_of_mass(
+    mol: Chem.Mol,
+    conf_idx: int = -1
+) -> np.ndarray:
+    
+    masses = np.array([atom.GetMass() for atom in mol.GetAtoms()])
+    coords = _get_coords(mol, conf_idx = conf_idx)
+    centre_of_mass = (
+        np.sum(coords * masses[:, None], axis = 0) / np.sum(masses)
+    )
+
+    return centre_of_mass
+
 def _get_coords(
     mol: Chem.Mol,
     conf_idx: int = -1
