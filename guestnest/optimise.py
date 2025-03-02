@@ -63,7 +63,7 @@ def objective_function(
     host_coords: np.ndarray,
     guest_coords: np.ndarray
 ) -> float:
-    
+       
     distances, angles = np.split(x, 2)
     transformed_guest_coords = transform_coords(
         guest_coords, distances, angles
@@ -73,10 +73,23 @@ def objective_function(
 
 def penalty_function(
     host_coords: np.ndarray,
-    guest_coords: np.ndarray
+    guest_coords: np.ndarray,
+    close_contact_threshold: float = 1.5
 ) -> float:
     
-    return 0.0
+    distance_matrix = np.linalg.norm(
+        host_coords[:, None, :] - guest_coords[None, :, :], axis = -1
+    )
+
+    penalty = (
+        np.sum(
+            np.square(
+                np.maximum(0, (close_contact_threshold - distance_matrix))
+            )
+        )
+    )
+        
+    return penalty
 
 def transform_coords(
     coords: np.ndarray,
