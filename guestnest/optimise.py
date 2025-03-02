@@ -92,3 +92,34 @@ def translate(
 ) -> np.ndarray:
     
     return coords + distances
+
+def rotate(
+    coords: np.ndarray,
+    angles: np.ndarray,
+) -> np.ndarray:
+    
+    return coords @ _angles_to_rotation_matrix(angles).T
+
+def _angles_to_rotation_matrix(
+    angles = np.ndarray
+) -> np.ndarray:
+    
+    alpha, beta, gamma = angles
+
+    rx = np.array([
+        [1.0,            0.0,            0.0          ],
+        [0.0,            np.cos(alpha), -np.sin(alpha)],
+        [0.0,            np.sin(alpha),  np.cos(alpha)]
+    ])
+    ry = np.array([
+        [ np.cos(beta),  0.0,             np.sin(beta)],
+        [ 0.0,           1.0,             0.0         ],
+        [-np.sin(beta),  0.0,             np.cos(beta)]
+    ])
+    rz = np.array([
+        [np.cos(gamma), -np.sin(gamma),   0.0         ],
+        [np.sin(gamma),  np.cos(gamma),   0.0         ],
+        [0.0,            0.0,             1.0         ]
+    ])
+
+    return rz @ ry @ rx
