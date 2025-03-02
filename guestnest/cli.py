@@ -19,8 +19,10 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 ############################### LIBRARY IMPORTS ###############################
 ###############################################################################
 
+import datetime
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
+from rdkit import Chem
 
 ###############################################################################
 ############################## ARGUMENT PARSING ###############################
@@ -56,7 +58,19 @@ def parse_args() -> Namespace:
 
 def main():
 
-    pass
+    datetime_ = datetime.datetime.now()
+    print(f'launched @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}\n')
+
+    args = parse_args()
+
+    host = Chem.MolFromMolFile(args.host_sdf, removeHs = False)
+    guest = Chem.MolFromMolFile(args.guest_sdf, removeHs = False)
+    for mol, label in zip((host, guest), ('host', 'guest')):
+        print(
+            f'{label:<5} | '
+            f'n. atoms: {mol.GetNumAtoms():>3} | '
+            f'charge: {Chem.GetFormalCharge(mol):>3} |'
+        )
 
 ################################################################################
 ############################## PROGRAM STARTS HERE #############################
