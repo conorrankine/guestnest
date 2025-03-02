@@ -64,7 +64,7 @@ def objective_function(
     guest_coords: np.ndarray
 ) -> float:
     
-    distances, angles = np.split(x, [3, 3])
+    distances, angles = np.split(x, 2)
     transformed_guest_coords = transform_coords(
         guest_coords, distances, angles
     )
