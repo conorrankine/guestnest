@@ -21,6 +21,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from rdkit import Chem
+from scipy.optimize import basinhopping
 
 ###############################################################################
 ################################## FUNCTIONS ##################################
@@ -28,10 +29,42 @@ from rdkit import Chem
 
 def optimise_fit(
     host: Chem.Mol,
-    guest: Chem.Mol
+    guest: Chem.Mol,
+    niter: int = 100,
+    max_translation: tuple = (5.0, 5.0, 5.0),
+    max_rotation: tuple = (np.pi, np.pi, np.pi)
 ) -> Chem.Mol:
     
+    host_coords = _get_coords(host)
+    guest_coords = _get_coords(guest)
+
+    x0 = np.zeros(6)
+
+    bounds = (
+        [[-1.0 * x, x] for x in max_translation] +
+        [[-1.0 * x, x] for x in max_rotation]
+    )
+
+    res = basinhopping(
+        objective,
+        x0,
+        niter = niter,
+        minimizer_kwargs = {
+            'method': 'L-BFGS-B',
+            'bounds': bounds,
+            'args': (host_coords, guest_coords)
+        }
+    )
+    
     return None
+
+def objective(
+    x,
+    host_coords: np.ndarray,
+    guest_coords: np.ndarray
+) -> float:
+    
+    return 0.0
 
 def _get_coords(
     mol: Chem.Mol,
