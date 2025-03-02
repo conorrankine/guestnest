@@ -1,0 +1,9 @@
+[project]
+name = "guestnest"
+version = "0.1"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "rdkit>=2024.9.5",
+    "scipy>=1.15.2",
+]
