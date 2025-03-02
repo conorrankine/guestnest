@@ -20,6 +20,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 ###############################################################################
 
 import datetime
+from . import optimise
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from rdkit import Chem
@@ -71,6 +72,15 @@ def main():
             f'n. atoms: {mol.GetNumAtoms():>3} | '
             f'charge: {Chem.GetFormalCharge(mol):>3} |'
         )
+
+    optimise.centre(host)
+    optimise.centre(guest)
+
+    host_guest_complex = optimise.optimise_fit(host, guest)
+
+    writer = Chem.SDWriter('./host_guest_complex.sdf')
+    writer.write(host_guest_complex)
+    writer.close()
 
 ################################################################################
 ############################## PROGRAM STARTS HERE #############################
