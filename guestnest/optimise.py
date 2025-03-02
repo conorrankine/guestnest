@@ -46,7 +46,7 @@ def optimise_fit(
     )
 
     res = basinhopping(
-        objective,
+        objective_function,
         x0,
         niter = niter,
         minimizer_kwargs = {
@@ -58,8 +58,20 @@ def optimise_fit(
     
     return None
 
-def objective(
+def objective_function(
     x,
+    host_coords: np.ndarray,
+    guest_coords: np.ndarray
+) -> float:
+    
+    distances, angles = np.split(x, [3, 3])
+    transformed_guest_coords = transform_coords(
+        guest_coords, distances, angles
+    )
+    
+    return penalty_function(host_coords, transformed_guest_coords)
+
+def penalty_function(
     host_coords: np.ndarray,
     guest_coords: np.ndarray
 ) -> float:
