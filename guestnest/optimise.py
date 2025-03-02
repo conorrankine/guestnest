@@ -66,6 +66,14 @@ def objective(
     
     return 0.0
 
+def transform_coords(
+    coords: np.ndarray,
+    distances: np.ndarray,
+    angles: np.ndarray
+) -> np.ndarray:
+    
+    return _translate(_rotate(coords, angles,), distances)
+
 def _get_coords(
     mol: Chem.Mol,
     conf_idx: int = -1
