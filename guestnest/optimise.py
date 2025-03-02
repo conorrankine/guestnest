@@ -45,7 +45,7 @@ def optimise_fit(
         [[-1.0 * x, x] for x in max_angles]
     )
 
-    res = basinhopping(
+    opt = basinhopping(
         objective_function,
         x0,
         niter = niter,
@@ -55,8 +55,16 @@ def optimise_fit(
             'args': (host_coords, guest_coords)
         }
     )
+
+    opt_distances, opt_angles = np.split(opt.x, 2)
+    opt_guest_coords = transform_coords(
+        guest_coords, opt_distances, opt_angles
+    )
+    _set_coords(guest, opt_guest_coords)
+
+    host_guest_complex = Chem.CombineMols(host, guest)
     
-    return None
+    return host_guest_complex
 
 def objective_function(
     x,
