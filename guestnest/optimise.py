@@ -51,10 +51,12 @@ def optimise_fit(
 
     x0 = np.zeros(6)
 
-    bounds = (
+    bounds = np.array(
         [[-1.0 * x, x] for x in max_distances] +
         [[-1.0 * x, x] for x in max_angles]
     )
+
+    x0 = np.random.uniform(bounds[:,0], bounds[:,1])
 
     opt = basinhopping(
         _objective_function,
