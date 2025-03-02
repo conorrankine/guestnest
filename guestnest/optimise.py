@@ -31,8 +31,8 @@ def optimise_fit(
     host: Chem.Mol,
     guest: Chem.Mol,
     niter: int = 100,
-    max_translation: tuple = (5.0, 5.0, 5.0),
-    max_rotation: tuple = (np.pi, np.pi, np.pi)
+    max_distances: tuple = (5.0, 5.0, 5.0),
+    max_angles: tuple = (np.pi, np.pi, np.pi)
 ) -> Chem.Mol:
     
     host_coords = _get_coords(host)
@@ -41,8 +41,8 @@ def optimise_fit(
     x0 = np.zeros(6)
 
     bounds = (
-        [[-1.0 * x, x] for x in max_translation] +
-        [[-1.0 * x, x] for x in max_rotation]
+        [[-1.0 * x, x] for x in max_distances] +
+        [[-1.0 * x, x] for x in max_angles]
     )
 
     res = basinhopping(
@@ -86,14 +86,14 @@ def _set_coords(
     for i, (x, y, z) in enumerate(coords):
         conf.SetAtomPosition(i, (x, y, z))
 
-def translate(
+def _translate(
     coords: np.ndarray,
     distances: np.ndarray
 ) -> np.ndarray:
     
     return coords + distances
 
-def rotate(
+def _rotate(
     coords: np.ndarray,
     angles: np.ndarray,
 ) -> np.ndarray:
