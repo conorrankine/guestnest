@@ -21,6 +21,11 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.rdForceFieldHelpers import (
+    MMFFGetMoleculeForceField,
+    MMFFGetMoleculeProperties
+)
 from scipy.optimize import basinhopping
 
 ###############################################################################
@@ -37,6 +42,23 @@ def centre(
         _get_coords(mol, conf_idx = conf_idx), -1.0 * centre_of_mass
     )
     _set_coords(mol, centred_coords, conf_idx = conf_idx)
+
+def optimise_geom_mmff(
+    mol: Chem.Mol,
+    fixed_atoms: list[int] = None
+) -> Chem.Mol:
+
+    ff = MMFFGetMoleculeForceField(
+        mol, MMFFGetMoleculeProperties(mol)
+    )
+
+    if fixed_atoms is not None:
+        for fixed_atom in fixed_atoms:
+            ff.AddFixedPoint(fixed_atom)
+
+    ff.Minimize()
+
+    return mol
 
 def optimise_fit(
     host: Chem.Mol,
