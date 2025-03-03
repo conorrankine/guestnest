@@ -76,7 +76,15 @@ def main():
     optimise.centre(host)
     optimise.centre(guest)
 
-    host_guest_complex = optimise.optimise_fit(host, guest)
+    host_guest_complex = optimise.optimise_fit(
+        host,
+        guest
+    )
+
+    host_guest_complex = optimise.optimise_geom_mmff(
+        host_guest_complex,
+        fixed_atoms = [i for i in range(host.GetNumAtoms())]
+    )
 
     writer = Chem.SDWriter('./host_guest_complex.sdf')
     writer.write(host_guest_complex)
