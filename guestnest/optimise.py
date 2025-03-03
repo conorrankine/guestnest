@@ -66,6 +66,7 @@ def optimise_fit(
     guest: Chem.Mol,
     niter: int = 100,
     temperature: float = 5.0,
+    distance_threshold: float = 2.0,
     max_distances: tuple = (5.0, 5.0, 5.0),
     max_angles: tuple = (np.pi, np.pi, np.pi)
 ) -> tuple[Chem.Mol, OptimizeResult]:
@@ -85,7 +86,7 @@ def optimise_fit(
         minimizer_kwargs = {
             'method': 'L-BFGS-B',
             'bounds': bounds,
-            'args': (host, guest)
+            'args': (host, guest, distance_threshold)
         },
         disp = True
     )
@@ -104,6 +105,7 @@ def _objective_function(
     x,
     host: Chem.Mol,
     guest: Chem.Mol,
+    distance_threshold: float = 2.0
 ) -> float:
     
     guest_copy = Chem.Mol(guest)
@@ -114,12 +116,16 @@ def _objective_function(
     )
     _set_coords(guest_copy, transformed_guest_coords)
     
-    return _penalty_function(host, guest_copy)
+    return _penalty_function(
+        host,
+        guest_copy,
+        distance_threshold = distance_threshold
+    )
 
 def _penalty_function(
     host: Chem.Mol,
     guest: Chem.Mol,
-    close_contact_threshold: float = 1.5,
+    distance_threshold: float = 2.0,
     alpha: float = 1.0,
     beta: float = 0.1
 ) -> float:
@@ -134,7 +140,7 @@ def _penalty_function(
     distance_penalty = (
         np.sum(
             np.square(
-                np.maximum(0, (close_contact_threshold - distance_matrix))
+                np.maximum(0, (distance_threshold - distance_matrix))
             )
         )
     )

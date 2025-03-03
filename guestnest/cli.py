@@ -49,6 +49,13 @@ def parse_args() -> Namespace:
         help = 'path to an .sdf/mol file for the guest molecule'
     )
     p.add_argument(
+        '-d', '--distance_threshold', type = float, default = 2.0,
+        help = (
+            'threshold for allowable host-guest distances; host-guest '
+            'distances lower than this are penalised quadratically'
+        )
+    )
+    p.add_argument(
         '-n', '--niter', type = int, default = 25,
         help = 'number of iterations for the basin-hopping algorithm'
     )
@@ -90,7 +97,8 @@ def main():
         host,
         guest,
         niter = args.niter,
-        temperature = args.temperature
+        temperature = args.temperature,
+        distance_threshold = args.distance_threshold
     )
     print(f'...finished basin-hopping after {opt.nit} iterations!\n')
 
