@@ -65,6 +65,7 @@ def optimise_fit(
     host: Chem.Mol,
     guest: Chem.Mol,
     niter: int = 100,
+    temperature: float = 5.0,
     max_distances: tuple = (5.0, 5.0, 5.0),
     max_angles: tuple = (np.pi, np.pi, np.pi)
 ) -> tuple[Chem.Mol, OptimizeResult]:
@@ -80,6 +81,7 @@ def optimise_fit(
         _objective_function,
         x0,
         niter = niter,
+        T = temperature,
         minimizer_kwargs = {
             'method': 'L-BFGS-B',
             'bounds': bounds,

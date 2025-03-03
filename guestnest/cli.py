@@ -52,6 +52,10 @@ def parse_args() -> Namespace:
         '-n', '--niter', type = int, default = 25,
         help = 'number of iterations for the basin-hopping algorithm'
     )
+    p.add_argument(
+        '-t', '--temperature', type = float, default = 5.0,
+        help = '"temperature" parameter for the basin-hopping algorithm'
+    )
 
     args = p.parse_args()
 
@@ -85,7 +89,8 @@ def main():
     host_guest_complex, opt = optimise.optimise_fit(
         host,
         guest,
-        niter = args.niter
+        niter = args.niter,
+        temperature = args.temperature
     )
     print(f'...finished basin-hopping after {opt.nit} iterations!\n')
 
