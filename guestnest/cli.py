@@ -49,11 +49,14 @@ def parse_args() -> Namespace:
         help = 'path to an .sdf/mol file for the guest molecule'
     )
     p.add_argument(
+        '-o', '--output_f', type = Path, default = './host_guest_complex.sdf',
+        help = ('path to an output .sdf/mol or .xyz file for the host-guest '
+            'complex; the output file type is determined by the suffix')
+    )
+    p.add_argument(
         '-d', '--distance_threshold', type = float, default = 2.0,
-        help = (
-            'threshold for allowable host-guest distances; host-guest '
-            'distances lower than this are penalised quadratically'
-        )
+        help = ('host-guest distances shorter than `distance_threshold` '
+            'contribute to the distance component of the penalty')
     )
     p.add_argument(
         '-n', '--niter', type = int, default = 25,
@@ -69,7 +72,7 @@ def parse_args() -> Namespace:
     )
     p.add_argument(
         '-a', '--alpha', type = float, default = 1.0,
-        help = 'weighting for the distance component of the penalty'
+        help = 'weighting for the host-guest distance component of the penalty'
     )
     p.add_argument(
         '-b', '--beta', type = float, default = 0.01,
@@ -124,9 +127,13 @@ def main():
     )
     print('...optimised the host-guest complex!\n')
 
-    writer = Chem.SDWriter('./host_guest_complex.sdf')
-    writer.write(host_guest_complex)
-    writer.close()
+    file_writers = {
+        '.sdf': Chem.MolToMolFile,
+        '.xyz': Chem.MolToXYZFile
+    }
+
+    file_writer = file_writers[args.output_f.suffix]
+    file_writer(host_guest_complex, args.output_f)
 
     datetime_ = datetime.datetime.now()
     print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
