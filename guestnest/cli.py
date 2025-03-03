@@ -48,6 +48,10 @@ def parse_args() -> Namespace:
         'guest_sdf', type = Path,
         help = 'path to an .sdf/mol file for the guest molecule'
     )
+    p.add_argument(
+        '-n', '--niter', type = int, default = 25,
+        help = 'number of iterations for the basin-hopping algorithm'
+    )
 
     args = p.parse_args()
 
@@ -80,7 +84,8 @@ def main():
     print('starting basin-hopping...')
     host_guest_complex, opt = optimise.optimise_fit(
         host,
-        guest
+        guest,
+        niter = args.niter
     )
     print(f'...finished basin-hopping after {opt.nit} iterations!\n')
 
