@@ -84,7 +84,8 @@ def optimise_fit(
             'method': 'L-BFGS-B',
             'bounds': bounds,
             'args': (host, guest)
-        }
+        },
+        disp = True
     )
 
     opt_distances, opt_angles = np.split(opt.x, 2)
