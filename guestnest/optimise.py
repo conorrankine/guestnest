@@ -27,6 +27,7 @@ from rdkit.Chem.rdForceFieldHelpers import (
     MMFFGetMoleculeProperties
 )
 from scipy.optimize import basinhopping
+from scipy.optimize._optimize import OptimizeResult
 
 ###############################################################################
 ################################## FUNCTIONS ##################################
@@ -66,7 +67,7 @@ def optimise_fit(
     niter: int = 100,
     max_distances: tuple = (5.0, 5.0, 5.0),
     max_angles: tuple = (np.pi, np.pi, np.pi)
-) -> Chem.Mol:
+) -> tuple[Chem.Mol, OptimizeResult]:
     
     bounds = np.array(
         [[-1.0 * x, x] for x in max_distances] +
@@ -94,7 +95,7 @@ def optimise_fit(
 
     host_guest_complex = Chem.CombineMols(host, guest)
     
-    return host_guest_complex
+    return host_guest_complex, opt
 
 def _objective_function(
     x,
