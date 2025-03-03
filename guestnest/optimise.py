@@ -68,11 +68,6 @@ def optimise_fit(
     max_angles: tuple = (np.pi, np.pi, np.pi)
 ) -> Chem.Mol:
     
-    host_coords = _get_coords(host)
-    guest_coords = _get_coords(guest)
-
-    x0 = np.zeros(6)
-
     bounds = np.array(
         [[-1.0 * x, x] for x in max_distances] +
         [[-1.0 * x, x] for x in max_angles]
@@ -87,13 +82,13 @@ def optimise_fit(
         minimizer_kwargs = {
             'method': 'L-BFGS-B',
             'bounds': bounds,
-            'args': (host_coords, guest_coords)
+            'args': (host, guest)
         }
     )
 
     opt_distances, opt_angles = np.split(opt.x, 2)
     opt_guest_coords = _transform_coords(
-        guest_coords, opt_distances, opt_angles
+        _get_coords(guest), opt_distances, opt_angles
     )
     _set_coords(guest, opt_guest_coords)
 
@@ -103,36 +98,48 @@ def optimise_fit(
 
 def _objective_function(
     x,
-    host_coords: np.ndarray,
-    guest_coords: np.ndarray
+    host: Chem.Mol,
+    guest: Chem.Mol,
 ) -> float:
+    
+    guest_copy = Chem.Mol(guest)
        
     distances, angles = np.split(x, 2)
     transformed_guest_coords = _transform_coords(
-        guest_coords, distances, angles
+        _get_coords(guest_copy), distances, angles
     )
+    _set_coords(guest_copy, transformed_guest_coords)
     
-    return _penalty_function(host_coords, transformed_guest_coords)
+    return _penalty_function(host, guest_copy)
 
 def _penalty_function(
-    host_coords: np.ndarray,
-    guest_coords: np.ndarray,
-    close_contact_threshold: float = 1.5
+    host: Chem.Mol,
+    guest: Chem.Mol,
+    close_contact_threshold: float = 1.5,
+    alpha: float = 1.0,
+    beta: float = 0.1
 ) -> float:
+    
+    host_coords = _get_coords(host)
+    guest_coords = _get_coords(guest)
     
     distance_matrix = np.linalg.norm(
         host_coords[:, None, :] - guest_coords[None, :, :], axis = -1
     )
 
-    penalty = (
+    distance_penalty = (
         np.sum(
             np.square(
                 np.maximum(0, (close_contact_threshold - distance_matrix))
             )
         )
     )
+
+    energy_penalty = _eval_energy(
+        Chem.CombineMols(host, guest)
+    )
         
-    return penalty
+    return (alpha * distance_penalty) + (beta * energy_penalty)
 
 def _transform_coords(
     coords: np.ndarray,
@@ -212,3 +219,13 @@ def _angles_to_rotation_matrix(
     ])
 
     return rz @ ry @ rx
+
+def _eval_energy(
+    mol: Chem.Mol
+) -> float:
+    
+    ff = MMFFGetMoleculeForceField(
+        mol, MMFFGetMoleculeProperties(mol)
+    )
+
+    return ff.CalcEnergy()
