@@ -65,6 +65,7 @@ def optimise_fit(
     host: Chem.Mol,
     guest: Chem.Mol,
     niter: int = 100,
+    stepsize: float = 2.5,
     temperature: float = 5.0,
     distance_threshold: float = 2.0,
     alpha: float = 1.0,
@@ -84,6 +85,7 @@ def optimise_fit(
         _objective_function,
         x0,
         niter = niter,
+        stepsize = stepsize,
         T = temperature,
         minimizer_kwargs = {
             'method': 'L-BFGS-B',

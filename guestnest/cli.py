@@ -60,6 +60,10 @@ def parse_args() -> Namespace:
         help = 'number of iterations for the basin-hopping algorithm'
     )
     p.add_argument(
+        '-s', '--stepsize', type = float, default = 2.5,
+        help = 'step size parameter for the basin-hopping algorithm'
+    )
+    p.add_argument(
         '-t', '--temperature', type = float, default = 5.0,
         help = '"temperature" parameter for the basin-hopping algorithm'
     )
@@ -105,6 +109,7 @@ def main():
         host,
         guest,
         niter = args.niter,
+        stepsize = args.stepsize,
         temperature = args.temperature,
         distance_threshold = args.distance_threshold,
         alpha = args.alpha,
