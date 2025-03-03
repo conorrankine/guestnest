@@ -63,6 +63,14 @@ def parse_args() -> Namespace:
         '-t', '--temperature', type = float, default = 5.0,
         help = '"temperature" parameter for the basin-hopping algorithm'
     )
+    p.add_argument(
+        '-a', '--alpha', type = float, default = 1.0,
+        help = 'weighting for the distance component of the penalty'
+    )
+    p.add_argument(
+        '-b', '--beta', type = float, default = 0.01,
+        help = 'weighting for the (MMFF94) energy component of the penalty'
+    )
 
     args = p.parse_args()
 
@@ -98,7 +106,9 @@ def main():
         guest,
         niter = args.niter,
         temperature = args.temperature,
-        distance_threshold = args.distance_threshold
+        distance_threshold = args.distance_threshold,
+        alpha = args.alpha,
+        beta = args.beta
     )
     print(f'...finished basin-hopping after {opt.nit} iterations!\n')
 
