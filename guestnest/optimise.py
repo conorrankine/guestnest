@@ -241,10 +241,14 @@ def _angles_to_rotation_matrix(
 def _get_random_translation(
     x_max: float,
     y_max: float,
-    z_max: float
+    z_max: float,
+    rng: np.random.Generator = None
 ) -> tuple[float]:
     
-    return _random_point_in_ellipsoid(x_max, y_max, z_max)
+    if rng is  None:
+        rng = np.random.default_rng()
+    
+    return _random_point_in_ellipsoid(x_max, y_max, z_max, rng = rng)
 
 def _get_random_rotation(
     a_max: float = np.pi,
@@ -263,12 +267,16 @@ def _get_random_rotation(
 def _random_point_in_ellipsoid(
     a: float,
     b: float,
-    c: float
+    c: float,
+    rng: np.random.Generator = None
 ) -> tuple[float]:
     
-    r = np.random.rand() ** (1.0 / 3.0)
-    theta = np.arccos(2.0 * np.random.rand() - 1.0)
-    phi = (2.0 * np.pi * np.random.rand())
+    if rng is None:
+        rng = np.random.default_rng()
+    
+    r = rng.random() ** (1.0 / 3.0)
+    theta = np.arccos(2.0 * rng.random() - 1.0)
+    phi = (2.0 * np.pi * rng.random())
 
     x, y, z = [
         p * q for p, q in zip((a, b, c), _spherical_to_cartesian(r, theta, phi))
