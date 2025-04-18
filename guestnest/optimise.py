@@ -246,6 +246,20 @@ def _get_random_translation(
     
     return _random_point_in_ellipsoid(x_max, y_max, z_max)
 
+def _get_random_rotation(
+    a_max: float = np.pi,
+    b_max: float = np.pi,
+    c_max: float = np.pi,
+    rng: np.random.Generator = None
+) -> tuple[float]:
+
+    if rng is None:
+        rng = np.random.default_rng()
+
+    return tuple([
+        rng.uniform(-1.0 * val, val) for val in (a_max, b_max, c_max)
+    ])    
+    
 def _random_point_in_ellipsoid(
     a: float,
     b: float,
