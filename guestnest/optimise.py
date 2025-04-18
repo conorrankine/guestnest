@@ -238,6 +238,14 @@ def _angles_to_rotation_matrix(
 
     return rz @ ry @ rx
 
+def _get_random_translation(
+    x_max: float,
+    y_max: float,
+    z_max: float
+) -> tuple[float]:
+    
+    return _random_point_in_ellipsoid(x_max, y_max, z_max)
+
 def _random_point_in_ellipsoid(
     a: float,
     b: float,
