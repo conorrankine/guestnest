@@ -243,12 +243,14 @@ def _get_random_translation(
     y_max: float,
     z_max: float,
     rng: np.random.Generator = None
-) -> tuple[float]:
+) -> np.ndarray:
     
     if rng is  None:
         rng = np.random.default_rng()
     
-    return _random_point_in_ellipsoid(x_max, y_max, z_max, rng = rng)
+    return np.array(
+        _random_point_in_ellipsoid(x_max, y_max, z_max, rng = rng)
+    )
 
 def _get_random_rotation(
     a_max: float = np.pi,
@@ -260,16 +262,16 @@ def _get_random_rotation(
     if rng is None:
         rng = np.random.default_rng()
 
-    return tuple([
-        rng.uniform(-1.0 * val, val) for val in (a_max, b_max, c_max)
-    ])    
+    return np.array(
+        [rng.uniform(-1.0 * val, val) for val in (a_max, b_max, c_max)]
+    )   
     
 def _random_point_in_ellipsoid(
     a: float,
     b: float,
     c: float,
     rng: np.random.Generator = None
-) -> tuple[float]:
+) -> np.ndarray:
     
     if rng is None:
         rng = np.random.default_rng()
@@ -279,11 +281,13 @@ def _random_point_in_ellipsoid(
     phi = (2.0 * np.pi * rng.random())
 
     x, y, z = [
-        p * q for p, q in zip((a, b, c), _spherical_to_cartesian(r, theta, phi))
+        p * q for p, q in zip(
+            (a, b, c), _spherical_to_cartesian(r, theta, phi)
+        )
     ]
 
     if ((x**2 / a**2) + (y**2 / b**2) + (z**2 / c**2) <= 1):
-        return (x, y, z)
+        return np.array([x, y, z])
     else:
         raise RuntimeError(
             f'the point ({x:.3f}, {y:.3f}, {z:.3f}) is not inside the '
@@ -294,13 +298,13 @@ def _spherical_to_cartesian(
     r: float,
     theta: float,
     phi: float
-) -> tuple[float]:
+) -> np.ndarray:
     
     x = r * np.sin(theta) * np.cos(phi)
     y = r * np.sin(theta) * np.sin(phi)
     z = r * np.cos(theta)
 
-    return (x, y, z)
+    return np.array([x, y, z])
 
 def _eval_energy(
     mol: Chem.Mol
