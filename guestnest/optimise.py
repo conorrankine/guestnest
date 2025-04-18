@@ -238,6 +238,40 @@ def _angles_to_rotation_matrix(
 
     return rz @ ry @ rx
 
+def _random_point_in_ellipsoid(
+    a: float,
+    b: float,
+    c: float
+) -> tuple[float]:
+    
+    r = np.random.rand() ** (1.0 / 3.0)
+    theta = np.arccos(2.0 * np.random.rand() - 1.0)
+    phi = (2.0 * np.pi * np.random.rand())
+
+    x, y, z = [
+        p * q for p, q in zip((a, b, c), _spherical_to_cartesian(r, theta, phi))
+    ]
+
+    if ((x**2 / a**2) + (y**2 / b**2) + (z**2 / c**2) <= 1):
+        return (x, y, z)
+    else:
+        raise RuntimeError(
+            f'the point ({x:.3f}, {y:.3f}, {z:.3f}) is not inside the '
+            f'ellipsoid with a = {a:.3f}, b = {b:.3f}, and c = {c:.3f}'
+        )
+
+def _spherical_to_cartesian(
+    r: float,
+    theta: float,
+    phi: float
+) -> tuple[float]:
+    
+    x = r * np.sin(theta) * np.cos(phi)
+    y = r * np.sin(theta) * np.sin(phi)
+    z = r * np.cos(theta)
+
+    return (x, y, z)
+
 def _eval_energy(
     mol: Chem.Mol
 ) -> float:
