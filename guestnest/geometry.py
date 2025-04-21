@@ -248,6 +248,16 @@ def _get_centre_of_mass(
     mol: Chem.Mol,
     conf_idx: int = -1
 ) -> np.ndarray:
+    """
+    Gets the center of mass of a molecule.
+
+    Args:
+        mol (Chem.Mol): Molecule.
+        conf_idx (int, optional): Conformer index. Defaults to -1.
+
+    Returns:
+        np.ndarray: Center of mass ([x, y, z]).
+    """
     
     masses = np.array([atom.GetMass() for atom in mol.GetAtoms()])
     coords = get_coords(mol, conf_idx = conf_idx)
