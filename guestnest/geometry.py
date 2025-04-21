@@ -71,6 +71,14 @@ def rotate_coords(
     
     return coords @ _angles_to_rotation_matrix(angles).T
 
+def rotate_and_translate_coords(
+    coords: np.ndarray,
+    angles: np.ndarray,
+    distances: np.ndarray
+) -> np.ndarray:
+    
+    return translate_coords(rotate_coords(coords, angles), distances)
+
 def get_coords(
     mol: Chem.Mol,
     conf_idx: int = -1
