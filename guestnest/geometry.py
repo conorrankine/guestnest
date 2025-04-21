@@ -32,6 +32,20 @@ def centre(
     conf_idx: int = -1,
     inplace: bool = False
 ) -> Chem.Mol:
+    """
+    Centres a molecule via translation in Cartesian coordinates such that the
+    centre of mass is coincident with the origin ([0.0, 0.0, 0.0]).
+
+    Args:
+        mol (Chem.Mol): Molecule.
+        conf_idx (int, optional): Conformer index. Defaults to -1.
+        inplace (bool, optional): If True, the molecule is modified inplace
+            and returned; if False, a copy is created, modified, and returned.
+            Defaults to False.
+
+    Returns:
+        Chem.Mol: Centred molecule.
+    """
     
     target = mol if inplace else deepcopy(mol)    
     _set_centre_of_mass(
