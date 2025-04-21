@@ -136,14 +136,9 @@ def _penalty_function(
     vdw_distance_matrix: np.ndarray
 ) -> float:
     
-    distance_matrix = np.linalg.norm(
-        host_coords[:, None, :] - guest_coords[None, :, :], axis = -1
+    overlap_penalty = get_overlap_penalty(
+        host_coords, guest_coords, vdw_distance_matrix
     )
-
-    overlap_penalty_matrix = vdw_distance_matrix - distance_matrix
-    overlap_penalty_matrix[overlap_penalty_matrix < 0] = 0
-
-    overlap_penalty = np.sum(np.square(overlap_penalty_matrix))
 
     cavity_pos = np.sum(
         ((guest_coords**2) / (host_cavity_dims**2)), axis = 1
@@ -155,6 +150,21 @@ def _penalty_function(
     cavity_penalty = np.sum(np.square(cavity_boundary_violations))
 
     return overlap_penalty + cavity_penalty
+
+def get_overlap_penalty(
+    host_coords: np.ndarray,
+    guest_coords: np.ndarray,
+    vdw_distance_matrix: np.ndarray
+) -> float:
+
+    distance_matrix = np.linalg.norm(
+        host_coords[:, None, :] - guest_coords[None, :, :], axis = -1
+    )
+
+    overlap_penalty_matrix = vdw_distance_matrix - distance_matrix
+    overlap_penalty_matrix[overlap_penalty_matrix < 0] = 0
+
+    return np.sum(np.square(overlap_penalty_matrix))
 
 def optimise_geom_mmff(
     mol: Chem.Mol,
