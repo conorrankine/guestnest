@@ -329,7 +329,7 @@ def spherical_to_cartesian(
     phi: float
 ) -> np.ndarray:
     """
-    Converts spherical coordinates ([r; theta; phi]) to Cartesian coordinates
+    Converts spherical coordinates ([r, theta, phi]) to Cartesian coordinates
     ([x, y, z]).
 
     Args:
@@ -352,6 +352,18 @@ def cartesian_to_spherical(
     y: float,
     z: float
 ) -> np.ndarray:
+    """
+    Converts Cartesian coordinates ([x, y, z]) to spherical coordinates
+    ([r, theta, phi]).
+
+    Args:
+        x (float): X coordinate.
+        y (float): Y coordinate.
+        z (float): X coordinate.
+
+    Returns:
+        np.ndarray: Spherical coordinates ([r, theta, phi]).
+    """
 
     r = np.sqrt((x**2) + (y**2) + (z**2))
     if r == 0.0:
