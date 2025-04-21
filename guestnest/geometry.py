@@ -89,6 +89,20 @@ def rotate_mol(
     conf_idx: int = -1,
     inplace: bool = False
 ) -> Chem.Mol:
+    """
+    Rotates a molecule around the origin ([0.0, 0.0, 0.0]).
+
+    Args:
+        mol (Chem.Mol): Molecule.
+        angles (np.ndarray): Rotation angles ([a, b, c]) in radians.
+        conf_idx (int, optional): Conformer index. Defaults to -1.
+        inplace (bool, optional): If True, the molecule is modified inplace
+            and returned; if False, a copy is created, modified, and returned.
+            Defaults to False.
+
+    Returns:
+        Chem.Mol: Rotated molecule.
+    """
     
     target = mol if inplace else deepcopy(mol)    
     rotated_coords = rotate_coords(
