@@ -290,8 +290,18 @@ def _set_centre_of_mass(
     )
 
 def _angles_to_rotation_matrix(
-    angles = np.ndarray
+    angles: np.ndarray
 ) -> np.ndarray:
+    """
+    Returns the 3D rotation matrix for a set of (Euler) rotation angles
+    ([a, b, c]) in radians.
+
+    Args:
+        angles (np.ndarray, optional): Rotation angles ([a, b, c]) in radians.
+
+    Returns:
+        np.ndarray: 3D rotation matrix of shape (3, 3).
+    """
     
     alpha, beta, gamma = angles
 
