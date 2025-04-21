@@ -74,6 +74,11 @@ def translate_mol(
     Returns:
         Chem.Mol: Translated molecule.
     """
+
+    if not isinstance(distances, np.ndarray) or distances.shape != (3,):
+        raise ValueError(
+            '`distances` should be a `np.ndarray` with shape (3,)'
+        )
     
     target = mol if inplace else deepcopy(mol)    
     translated_coords = translate_coords(
@@ -103,6 +108,11 @@ def rotate_mol(
     Returns:
         Chem.Mol: Rotated molecule.
     """
+
+    if not isinstance(angles, np.ndarray) or angles.shape != (3,):
+        raise ValueError(
+            '`angles` should be a `np.ndarray` with shape (3,)'
+        )
     
     target = mol if inplace else deepcopy(mol)    
     rotated_coords = rotate_coords(
