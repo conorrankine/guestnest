@@ -60,6 +60,20 @@ def translate_mol(
     conf_idx: int = -1,
     inplace: bool = False
 ) -> Chem.Mol:
+    """
+    Translates a molecule in Cartesian coordinates.
+
+    Args:
+        mol (Chem.Mol): Molecule.
+        distances (np.ndarray): Translation vector ([x, y, z]) in Angstroem.
+        conf_idx (int, optional): Conformer index. Defaults to -1.
+        inplace (bool, optional): If True, the molecule is modified inplace
+            and returned; if False, a copy is created, modified, and returned.
+            Defaults to False.
+
+    Returns:
+        Chem.Mol: Translated molecule.
+    """
     
     target = mol if inplace else deepcopy(mol)    
     translated_coords = translate_coords(
