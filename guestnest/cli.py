@@ -92,9 +92,6 @@ def main():
         )
     print()
 
-    optimise.centre(host)
-    optimise.centre(guest)
-
     print('starting nesting...')
     host_guest_complex, opt = optimise.random_fit(
         host,

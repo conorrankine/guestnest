@@ -57,8 +57,8 @@ def random_fit(
 
     host_cavity_dims = np.array(host_cavity_dims)
 
-    centre(guest)
-    centre(host)
+    host_ = centre(host)
+    guest_ = centre(guest)
     
     bounds = np.array([
         [0.0, 1.0],             # radial distance
@@ -79,8 +79,8 @@ def random_fit(
         _objective_function,
         x0 = x0,
         args = (
-            get_coords(host),
-            get_coords(guest),
+            get_coords(host_),
+            get_coords(guest_),
             host_cavity_dims,
             vdw_distance_matrix
         ),
@@ -96,11 +96,11 @@ def random_fit(
         spherical_to_cartesian(*opt_spherical_coords) * host_cavity_dims
     )
 
-    fitted_guest = rotate_and_translate_mol(
-        guest, opt_rotation_angles, opt_cartesian_coords
+    fitted_guest_ = rotate_and_translate_mol(
+        guest_, opt_rotation_angles, opt_cartesian_coords
     )
 
-    host_guest_complex = Chem.CombineMols(host, fitted_guest)
+    host_guest_complex = Chem.CombineMols(host_, fitted_guest_)
     
     return host_guest_complex, opt
 
