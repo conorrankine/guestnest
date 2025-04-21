@@ -167,7 +167,7 @@ def optimise_geom_mmff(
 
     if fixed_atoms is not None:
         for fixed_atom in fixed_atoms:
-            ff.AddFixedPoint(fixed_atom)
+            ff.MMFFAddPositionConstraint(fixed_atom, 0.0, 1.0E5)
             
     ff.Minimize()
 
