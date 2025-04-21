@@ -272,6 +272,15 @@ def _set_centre_of_mass(
     com: np.ndarray,
     conf_idx: int = -1,
 ) -> None:
+    """
+    Sets the center of mass of a molecule via translation in Cartesian
+    coordinates such that the centre of mass is coincident with `com`.
+
+    Args:
+        mol (Chem.Mol): Molecule.
+        com (np.ndarray): Center of mass ([x, y, z]).
+        conf_idx (int, optional): Conformer index. Defaults to -1.
+    """
     
     coords_init = get_coords(mol, conf_idx = conf_idx)
     com_init = _get_centre_of_mass(mol, conf_idx = conf_idx)
