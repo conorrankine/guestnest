@@ -187,6 +187,19 @@ def rotate_and_translate_coords(
     angles: np.ndarray,
     distances: np.ndarray
 ) -> np.ndarray:
+    """
+    Rotates (around the origin ([0.0, 0.0, 0.0])) and translates a set of
+    Cartesian coordinates sequentially.
+
+    Args:
+        coords (np.ndarray): Cartesian coordinates as an array of shape (n, 3).
+        angles (np.ndarray): Rotation angles ([a, b, c]) in radians.
+        distances (np.ndarray): Translation vector ([x, y, z]).
+
+    Returns:
+        np.ndarray: Rotated and translated Cartesian coordinates as an array of
+            shape (n, 3).
+    """
     
     return translate_coords(rotate_coords(coords, angles), distances)
 
