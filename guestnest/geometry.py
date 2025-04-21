@@ -21,6 +21,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from rdkit import Chem
+from copy import deepcopy
 
 ###############################################################################
 ################################## FUNCTIONS ##################################
@@ -28,44 +29,64 @@ from rdkit import Chem
 
 def centre(
     mol: Chem.Mol,
-    conf_idx: int = -1
-) -> None:
+    conf_idx: int = -1,
+    inplace: bool = False
+) -> Chem.Mol:
     
+    target = mol if inplace else deepcopy(mol)    
     _set_centre_of_mass(
-        mol, [0.0, 0.0, 0.0], conf_idx = conf_idx
+        target, [0.0, 0.0, 0.0], conf_idx = conf_idx
     )
+
+    return target
 
 def translate_mol(
     mol: Chem.Mol,
     distances: np.ndarray,
-    conf_idx: int = -1
-) -> None:
+    conf_idx: int = -1,
+    inplace: bool = False
+) -> Chem.Mol:
     
+    target = mol if inplace else deepcopy(mol)    
     translated_coords = translate_coords(
-        get_coords(mol, conf_idx = conf_idx), distances
+        get_coords(target, conf_idx = conf_idx), distances
     )
-    set_coords(mol, translated_coords, conf_idx = conf_idx)
+    set_coords(target, translated_coords, conf_idx = conf_idx)
+
+    return target
 
 def rotate_mol(
     mol: Chem.Mol,
     angles: np.ndarray,
-    conf_idx: int = -1
-) -> None:
+    conf_idx: int = -1,
+    inplace: bool = False
+) -> Chem.Mol:
     
+    target = mol if inplace else deepcopy(mol)    
     rotated_coords = rotate_coords(
-        get_coords(mol, conf_idx = conf_idx), angles
+        get_coords(target, conf_idx = conf_idx), angles
     )
-    set_coords(mol, rotated_coords, conf_idx = conf_idx)
+    set_coords(target, rotated_coords, conf_idx = conf_idx)
+
+    return target
 
 def rotate_and_translate_mol(
     mol: Chem.Mol,
     angles: np.ndarray,
     distances: np.ndarray,
-    conf_idx: int = -1
-) -> None:
+    conf_idx: int = -1,
+    inplace: bool = False
+) -> Chem.Mol:
     
-    rotate_mol(mol, angles, conf_idx = conf_idx)
-    translate_mol(mol, distances, conf_idx = conf_idx)
+    target = mol if inplace else deepcopy(mol)    
+    target = rotate_mol(
+        target, angles, conf_idx = conf_idx, inplace = True
+    )
+    target = translate_mol(
+        target, distances, conf_idx = conf_idx, inplace = True
+    )
+
+    return target
 
 def translate_coords(
     coords: np.ndarray,
