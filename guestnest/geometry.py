@@ -374,20 +374,36 @@ def cartesian_to_spherical(
         return np.array([r, theta, phi])
 
 def get_vdw_distance_matrix(
-    host: Chem.Mol,
-    guest: Chem.Mol,
+    mol1: Chem.Mol,
+    mol2: Chem.Mol,
     vdw_scaling: float = 1.0
 ) -> np.ndarray:
+    """
+    Returns a matrix of van der Waals distances between `mol1` and `mol2` as an
+    array of shape (n_atoms$_{mol2}$, n_atoms$_{mol1}$) where each element, ij,
+    corresponds to the sum of the van der Waals radii of the i$^{th}$ atom in
+    `mol2` and the j$^{th}$ atom in `mol2`.
+
+    Args:
+        mol1 (Chem.Mol): Host molecule.
+        mol2 (Chem.Mol): Guest molecule.
+        vdw_scaling (float, optional): Scaling factor for the van der Waals
+            radii. Defaults to 1.0.
+
+    Returns:
+        np.ndarray: Van der Waals distance matrix as an array of shape
+            (n_atoms$_{mol2}$, n_atoms$_{mol1}$).
+    """
     
     pt = Chem.GetPeriodicTable() 
     
-    host_vdw = np.array(
-        [pt.GetRvdw(atom.GetSymbol()) for atom in host.GetAtoms()]
+    mol1_vdw = np.array(
+        [pt.GetRvdw(atom.GetSymbol()) for atom in mol1.GetAtoms()]
     ) * vdw_scaling
-    guest_vdw = np.array(
-        [pt.GetRvdw(atom.GetSymbol()) for atom in guest.GetAtoms()]
+    mol2_vdw = np.array(
+        [pt.GetRvdw(atom.GetSymbol()) for atom in mol2.GetAtoms()]
     ) * vdw_scaling
     
-    vdw_distance_matrix = guest_vdw + host_vdw[:, None]
+    vdw_distance_matrix = mol2_vdw + mol1_vdw[:, None]
 
     return vdw_distance_matrix
