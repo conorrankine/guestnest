@@ -57,6 +57,16 @@ def rotate_mol(
     )
     set_coords(mol, rotated_coords, conf_idx = conf_idx)
 
+def rotate_and_translate_mol(
+    mol: Chem.Mol,
+    angles: np.ndarray,
+    distances: np.ndarray,
+    conf_idx: int = -1
+) -> None:
+    
+    rotate_mol(mol, angles, conf_idx = conf_idx)
+    translate_mol(mol, distances, conf_idx = conf_idx)
+
 def translate_coords(
     coords: np.ndarray,
     distances: np.ndarray
