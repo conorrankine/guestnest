@@ -150,6 +150,16 @@ def translate_coords(
     coords: np.ndarray,
     distances: np.ndarray
 ) -> np.ndarray:
+    """
+    Translates a set of Cartesian coordinates.
+
+    Args:
+        coords (np.ndarray): Cartesian coordinates as an array of shape (n, 3).
+        distances (np.ndarray): Translation vector ([x, y, z]).
+
+    Returns:
+        np.ndarray: Translated coordinates as an array of shape (n, 3).
+    """
     
     return coords + distances
 
