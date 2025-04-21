@@ -119,6 +119,22 @@ def rotate_and_translate_mol(
     conf_idx: int = -1,
     inplace: bool = False
 ) -> Chem.Mol:
+    """
+    Rotates (around the origin ([0.0, 0.0, 0.0])) and translates (in Cartesian
+    coordinates) a molecule sequentially.
+
+    Args:
+        mol (Chem.Mol): Molecule.
+        angles (np.ndarray): Rotation angles ([a, b, c]) in radians.
+        distances (np.ndarray): Translation vector ([x, y, z]) in Angstroem.
+        conf_idx (int, optional): Conformer index. Defaults to -1.
+        inplace (bool, optional): If True, the molecule is modified inplace
+            and returned; if False, a copy is created, modified, and returned.
+            Defaults to False.
+
+    Returns:
+        Chem.Mol: Rotated and translated molecule.
+    """
     
     target = mol if inplace else deepcopy(mol)    
     target = rotate_mol(
