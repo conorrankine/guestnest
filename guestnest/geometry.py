@@ -328,6 +328,18 @@ def spherical_to_cartesian(
     theta: float,
     phi: float
 ) -> np.ndarray:
+    """
+    Converts spherical coordinates ([r; theta; phi]) to Cartesian coordinates
+    ([x, y, z]).
+
+    Args:
+        r (float): Radial distance.
+        theta (float): Zenith angle in radians.
+        phi (float): Azimuthal angle in radians.
+
+    Returns:
+        np.ndarray: Cartesian coordinates ([x, y, z]).
+    """
     
     x = r * np.sin(theta) * np.cos(phi)
     y = r * np.sin(theta) * np.sin(phi)
