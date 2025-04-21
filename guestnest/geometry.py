@@ -207,6 +207,17 @@ def get_coords(
     mol: Chem.Mol,
     conf_idx: int = -1
 ) -> np.ndarray:
+    """
+    Gets the Cartesian coordinates of the atoms in a molecule as an array of
+    shape (n_atoms, 3).
+
+    Args:
+        mol (Chem.Mol): Molecule.
+        conf_idx (int, optional): Conformer index. Defaults to -1.
+
+    Returns:
+        np.ndarray: Cartesian coordinates as an array of shape (n_atoms, 3).
+    """
     
     conf = mol.GetConformer(conf_idx)
     return np.array(
