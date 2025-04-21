@@ -229,6 +229,16 @@ def set_coords(
     coords: np.ndarray,
     conf_idx: int = -1
 ) -> None:
+    """
+    Sets the Cartesian coordinates of the atoms in a molecule from an array of
+    shape (n_atoms, 3).
+
+    Args:
+        mol (Chem.Mol): Molecule.
+        coords (np.ndarray): Cartesian coordinates as an array of shape
+            (n_atoms, 3).
+        conf_idx (int, optional): Conformer index. Defaults to -1.
+    """
     
     conf = mol.GetConformer(conf_idx)
     for i, (x, y, z) in enumerate(coords):
