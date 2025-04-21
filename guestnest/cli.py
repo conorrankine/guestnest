@@ -54,29 +54,17 @@ def parse_args() -> Namespace:
             'complex; the output file type is determined by the suffix')
     )
     p.add_argument(
-        '-d', '--distance_threshold', type = float, default = 2.0,
-        help = ('host-guest distances shorter than `distance_threshold` '
-            'contribute to the distance component of the penalty')
+        '-d', '--host_cavity_dims', type = list, default = [4.0, 4.0, 4.0],
+        help = ('dimensions ([x, y, z]) of the spherical (if x = y = z) or '
+            'elliptical (x = y != z) host molecule cavity')
     )
     p.add_argument(
-        '-n', '--niter', type = int, default = 25,
-        help = 'number of iterations for the basin-hopping algorithm'
+        '-s', '--vdw_scaling', type = float, default = 1.0,
+        help = 'scaling factor for van der Waals radii'
     )
     p.add_argument(
-        '-s', '--stepsize', type = float, default = 2.5,
-        help = 'step size parameter for the basin-hopping algorithm'
-    )
-    p.add_argument(
-        '-t', '--temperature', type = float, default = 5.0,
-        help = '"temperature" parameter for the basin-hopping algorithm'
-    )
-    p.add_argument(
-        '-a', '--alpha', type = float, default = 1.0,
-        help = 'weighting for the host-guest distance component of the penalty'
-    )
-    p.add_argument(
-        '-b', '--beta', type = float, default = 0.01,
-        help = 'weighting for the (MMFF94) energy component of the penalty'
+        '-i', '--maxiter', type = int, default = 250,
+        help = 'maximum number of iterations for the fitting algorithm'
     )
 
     args = p.parse_args()
@@ -107,18 +95,15 @@ def main():
     optimise.centre(host)
     optimise.centre(guest)
 
-    print('starting basin-hopping...')
-    host_guest_complex, opt = optimise.optimise_fit(
+    print('starting nesting...')
+    host_guest_complex, opt = optimise.random_fit(
         host,
         guest,
-        niter = args.niter,
-        stepsize = args.stepsize,
-        temperature = args.temperature,
-        distance_threshold = args.distance_threshold,
-        alpha = args.alpha,
-        beta = args.beta
+        maxiter = args.maxiter,
+        host_cavity_dims = args.host_cavity_dims,
+        vdw_scaling = args.vdw_scaling
     )
-    print(f'...finished basin-hopping after {opt.nit} iterations!\n')
+    print(f'...finished nesting after {opt.nit} iterations!\n')
 
     print('optimising the host-guest complex using MMFF94...')
     host_guest_complex = optimise.optimise_geom_mmff(

@@ -26,23 +26,135 @@ from rdkit.Chem.rdForceFieldHelpers import (
     MMFFGetMoleculeForceField,
     MMFFGetMoleculeProperties
 )
-from scipy.optimize import basinhopping
+from scipy.optimize import minimize
 from scipy.optimize._optimize import OptimizeResult
+from .geometry import (
+    centre,
+    get_coords,
+    set_coords,
+    rotate_and_translate_coords,
+    rotate_and_translate_mol,
+    spherical_to_cartesian,
+    cartesian_to_spherical,
+    get_vdw_distance_matrix
+)
 
 ###############################################################################
 ################################## FUNCTIONS ##################################
 ###############################################################################
 
-def centre(
-    mol: Chem.Mol,
-    conf_idx: int = -1
-) -> None:
+def random_fit(
+    host: Chem.Mol,
+    guest: Chem.Mol,
+    maxiter: int = 100,
+    host_cavity_dims: list = [4.0, 4.0, 4.0],
+    vdw_scaling: float = 1.0,
+    rng: np.random.Generator = None
+) -> tuple[Chem.Mol, OptimizeResult]:
     
-    centre_of_mass = _get_centre_of_mass(mol, conf_idx = conf_idx)
-    centred_coords = _translate(
-        _get_coords(mol, conf_idx = conf_idx), -1.0 * centre_of_mass
+    if rng is None:
+        rng = np.random.default_rng()
+
+    host_cavity_dims = np.array(host_cavity_dims)
+
+    centre(guest)
+    centre(host)
+    
+    bounds = np.array([
+        [0.0, 1.0],             # radial distance
+        [0.0, np.pi],           # zenith angle
+        [0.0, 2.0 * np.pi],     # azimuthal angle
+        [0.0, np.pi],           # rotation angle (x)
+        [0.0, np.pi],           # rotation angle (y)
+        [0.0, np.pi]            # rotation angle (z)
+    ])
+
+    x0 = rng.uniform(bounds[:,0], bounds[:,1])
+
+    vdw_distance_matrix = get_vdw_distance_matrix(
+        host, guest, vdw_scaling = vdw_scaling
     )
-    _set_coords(mol, centred_coords, conf_idx = conf_idx)
+
+    opt = minimize(
+        _objective_function,
+        x0 = x0,
+        args = (
+            get_coords(host),
+            get_coords(guest),
+            host_cavity_dims,
+            vdw_distance_matrix
+        ),
+        options = {
+            'maxiter': maxiter,
+            'disp': True
+        }
+    )
+
+    opt_spherical_coords, opt_rotation_angles = np.split(opt.x, 2)
+
+    opt_cartesian_coords = (
+        spherical_to_cartesian(*opt_spherical_coords) * host_cavity_dims
+    )
+
+    fitted_guest = rotate_and_translate_mol(
+        guest, opt_rotation_angles, opt_cartesian_coords
+    )
+
+    host_guest_complex = Chem.CombineMols(host, fitted_guest)
+    
+    return host_guest_complex, opt
+
+def _objective_function(
+    x,
+    host_coords: np.ndarray,
+    guest_coords: np.ndarray,
+    host_cavity_dims: np.ndarray,
+    vdw_distance_matrix: np.ndarray
+) -> float:
+
+    spherical_coords, rotation_angles = np.split(x, 2)
+
+    cartesian_coords = (
+        spherical_to_cartesian(*spherical_coords) * host_cavity_dims
+    )
+
+    transformed_guest_coords = rotate_and_translate_coords(
+        guest_coords, rotation_angles, cartesian_coords
+    )
+
+    return _penalty_function(
+        host_coords,
+        transformed_guest_coords,
+        host_cavity_dims,
+        vdw_distance_matrix
+    )
+
+def _penalty_function(
+    host_coords: np.ndarray,
+    guest_coords: np.ndarray,
+    host_cavity_dims: np.ndarray,
+    vdw_distance_matrix: np.ndarray
+) -> float:
+    
+    distance_matrix = np.linalg.norm(
+        host_coords[:, None, :] - guest_coords[None, :, :], axis = -1
+    )
+
+    overlap_penalty_matrix = vdw_distance_matrix - distance_matrix
+    overlap_penalty_matrix[overlap_penalty_matrix < 0] = 0
+
+    overlap_penalty = np.sum(np.square(overlap_penalty_matrix))
+
+    cavity_pos = np.sum(
+        ((guest_coords**2) / (host_cavity_dims**2)), axis = 1
+    )
+
+    cavity_boundary_violations = cavity_pos - 1
+    cavity_boundary_violations[cavity_boundary_violations < 0] = 0
+
+    cavity_penalty = np.sum(np.square(cavity_boundary_violations))
+
+    return overlap_penalty + cavity_penalty
 
 def optimise_geom_mmff(
     mol: Chem.Mol,
@@ -56,257 +168,12 @@ def optimise_geom_mmff(
     if fixed_atoms is not None:
         for fixed_atom in fixed_atoms:
             ff.AddFixedPoint(fixed_atom)
-
+            
     ff.Minimize()
 
     return mol
 
-def optimise_fit(
-    host: Chem.Mol,
-    guest: Chem.Mol,
-    niter: int = 100,
-    stepsize: float = 2.5,
-    temperature: float = 5.0,
-    distance_threshold: float = 2.0,
-    alpha: float = 1.0,
-    beta: float = 0.01,
-    max_distances: tuple = (5.0, 5.0, 5.0),
-    max_angles: tuple = (np.pi, np.pi, np.pi)
-) -> tuple[Chem.Mol, OptimizeResult]:
-    
-    bounds = np.array(
-        [[-1.0 * x, x] for x in max_distances] +
-        [[-1.0 * x, x] for x in max_angles]
-    )
-
-    x0 = np.random.uniform(bounds[:,0], bounds[:,1])
-
-    opt = basinhopping(
-        _objective_function,
-        x0,
-        niter = niter,
-        stepsize = stepsize,
-        T = temperature,
-        minimizer_kwargs = {
-            'method': 'L-BFGS-B',
-            'bounds': bounds,
-            'args': (host, guest, distance_threshold, alpha, beta)
-        },
-        disp = True
-    )
-
-    opt_distances, opt_angles = np.split(opt.x, 2)
-    opt_guest_coords = _transform_coords(
-        _get_coords(guest), opt_distances, opt_angles
-    )
-    _set_coords(guest, opt_guest_coords)
-
-    host_guest_complex = Chem.CombineMols(host, guest)
-    
-    return host_guest_complex, opt
-
-def _objective_function(
-    x,
-    host: Chem.Mol,
-    guest: Chem.Mol,
-    distance_threshold: float = 2.0,
-    alpha: float = 1.0,
-    beta: float = 0.01
-) -> float:
-    
-    guest_copy = Chem.Mol(guest)
-       
-    distances, angles = np.split(x, 2)
-    transformed_guest_coords = _transform_coords(
-        _get_coords(guest_copy), distances, angles
-    )
-    _set_coords(guest_copy, transformed_guest_coords)
-    
-    return _penalty_function(
-        host,
-        guest_copy,
-        distance_threshold = distance_threshold,
-        alpha = alpha,
-        beta = beta
-    )
-
-def _penalty_function(
-    host: Chem.Mol,
-    guest: Chem.Mol,
-    distance_threshold: float = 2.0,
-    alpha: float = 1.0,
-    beta: float = 0.01
-) -> float:
-    
-    host_coords = _get_coords(host)
-    guest_coords = _get_coords(guest)
-    
-    distance_matrix = np.linalg.norm(
-        host_coords[:, None, :] - guest_coords[None, :, :], axis = -1
-    )
-
-    distance_penalty = (
-        np.sum(
-            np.square(
-                np.maximum(0, (distance_threshold - distance_matrix))
-            )
-        )
-    )
-
-    energy_penalty = _eval_energy(
-        Chem.CombineMols(host, guest)
-    )
-        
-    return (alpha * distance_penalty) + (beta * energy_penalty)
-
-def _transform_coords(
-    coords: np.ndarray,
-    distances: np.ndarray,
-    angles: np.ndarray
-) -> np.ndarray:
-    
-    return _translate(_rotate(coords, angles,), distances)
-
-def _get_centre_of_mass(
-    mol: Chem.Mol,
-    conf_idx: int = -1
-) -> np.ndarray:
-    
-    masses = np.array([atom.GetMass() for atom in mol.GetAtoms()])
-    coords = _get_coords(mol, conf_idx = conf_idx)
-    centre_of_mass = (
-        np.sum(coords * masses[:, None], axis = 0) / np.sum(masses)
-    )
-
-    return centre_of_mass
-
-def _get_coords(
-    mol: Chem.Mol,
-    conf_idx: int = -1
-) -> np.ndarray:
-    
-    conf = mol.GetConformer(conf_idx)
-    return np.array(
-        [list(conf.GetAtomPosition(i)) for i in range(mol.GetNumAtoms())]
-    )
-
-def _set_coords(
-    mol: Chem.Mol,
-    coords: np.ndarray,
-    conf_idx: int = -1
-) -> None:
-    
-    conf = mol.GetConformer(conf_idx)
-    for i, (x, y, z) in enumerate(coords):
-        conf.SetAtomPosition(i, (x, y, z))
-
-def _translate(
-    coords: np.ndarray,
-    distances: np.ndarray
-) -> np.ndarray:
-    
-    return coords + distances
-
-def _rotate(
-    coords: np.ndarray,
-    angles: np.ndarray,
-) -> np.ndarray:
-    
-    return coords @ _angles_to_rotation_matrix(angles).T
-
-def _angles_to_rotation_matrix(
-    angles = np.ndarray
-) -> np.ndarray:
-    
-    alpha, beta, gamma = angles
-
-    rx = np.array([
-        [1.0,            0.0,            0.0          ],
-        [0.0,            np.cos(alpha), -np.sin(alpha)],
-        [0.0,            np.sin(alpha),  np.cos(alpha)]
-    ])
-    ry = np.array([
-        [ np.cos(beta),  0.0,             np.sin(beta)],
-        [ 0.0,           1.0,             0.0         ],
-        [-np.sin(beta),  0.0,             np.cos(beta)]
-    ])
-    rz = np.array([
-        [np.cos(gamma), -np.sin(gamma),   0.0         ],
-        [np.sin(gamma),  np.cos(gamma),   0.0         ],
-        [0.0,            0.0,             1.0         ]
-    ])
-
-    return rz @ ry @ rx
-
-def _get_random_translation(
-    x_max: float,
-    y_max: float,
-    z_max: float,
-    rng: np.random.Generator = None
-) -> np.ndarray:
-    
-    if rng is  None:
-        rng = np.random.default_rng()
-    
-    return np.array(
-        _random_point_in_ellipsoid(x_max, y_max, z_max, rng = rng)
-    )
-
-def _get_random_rotation(
-    a_max: float = np.pi,
-    b_max: float = np.pi,
-    c_max: float = np.pi,
-    rng: np.random.Generator = None
-) -> tuple[float]:
-
-    if rng is None:
-        rng = np.random.default_rng()
-
-    return np.array(
-        [rng.uniform(-1.0 * val, val) for val in (a_max, b_max, c_max)]
-    )   
-    
-def _random_point_in_ellipsoid(
-    a: float,
-    b: float,
-    c: float,
-    rng: np.random.Generator = None
-) -> np.ndarray:
-    
-    if rng is None:
-        rng = np.random.default_rng()
-    
-    r = rng.random() ** (1.0 / 3.0)
-    theta = np.arccos(2.0 * rng.random() - 1.0)
-    phi = (2.0 * np.pi * rng.random())
-
-    x, y, z = [
-        p * q for p, q in zip(
-            (a, b, c), _spherical_to_cartesian(r, theta, phi)
-        )
-    ]
-
-    if ((x**2 / a**2) + (y**2 / b**2) + (z**2 / c**2) <= 1):
-        return np.array([x, y, z])
-    else:
-        raise RuntimeError(
-            f'the point ({x:.3f}, {y:.3f}, {z:.3f}) is not inside the '
-            f'ellipsoid with a = {a:.3f}, b = {b:.3f}, and c = {c:.3f}'
-        )
-
-def _spherical_to_cartesian(
-    r: float,
-    theta: float,
-    phi: float
-) -> np.ndarray:
-    
-    x = r * np.sin(theta) * np.cos(phi)
-    y = r * np.sin(theta) * np.sin(phi)
-    z = r * np.cos(theta)
-
-    return np.array([x, y, z])
-
-def _eval_energy(
+def _eval_energy_mmff(
     mol: Chem.Mol
 ) -> float:
     
