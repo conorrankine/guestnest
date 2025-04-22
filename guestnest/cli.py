@@ -53,6 +53,10 @@ def parse_args() -> Namespace:
         help = 'path to an output .sdf/mol file for the host-guest complex'
     )
     p.add_argument(
+        '-n', '--n_complexes', type = int, default = 1,
+        help = 'number of host-guest complexes to generate'
+    )
+    p.add_argument(
         '-d', '--host_cavity_dims', type = list, default = [4.0, 4.0, 4.0],
         help = ('dimensions ([x, y, z]) of the spherical (if x = y = z) or '
             'elliptical (x = y != z) host molecule cavity')
@@ -91,25 +95,32 @@ def main():
         )
     print()
 
-    print('starting nesting...')
-    host_guest_complex, opt = optimise.random_fit(
-        host,
-        guest,
-        maxiter = args.maxiter,
-        host_cavity_dims = args.host_cavity_dims,
-        vdw_scaling = args.vdw_scaling
-    )
-    print(f'...finished nesting after {opt.nit} iterations!\n')
+    host_guest_complexes = []
 
-    print('optimising the host-guest complex using MMFF94...')
-    host_guest_complex = optimise.optimise_geom_mmff(
-        host_guest_complex,
-        fixed_atoms = [i for i in range(host.GetNumAtoms())]
-    )
-    print('...optimised the host-guest complex!\n')
+    for _ in range(args.n_complexes):
+
+        print('starting nesting...')
+        host_guest_complex, opt = optimise.random_fit(
+            host,
+            guest,
+            maxiter = args.maxiter,
+            host_cavity_dims = args.host_cavity_dims,
+            vdw_scaling = args.vdw_scaling
+        )
+        print(f'...finished nesting after {opt.nit} iterations!\n')
+
+        print('optimising the host-guest complex using MMFF94...')
+        host_guest_complex = optimise.optimise_geom_mmff(
+            host_guest_complex,
+            fixed_atoms = [i for i in range(host.GetNumAtoms())]
+        )
+        print('...optimised the host-guest complex!\n')
+
+        host_guest_complexes.append(host_guest_complex)
 
     with Chem.SDWriter(args.output_f) as writer:
-        writer.write(host_guest_complex)
+        for host_guest_complex in host_guest_complexes:
+            writer.write(host_guest_complex)
 
     datetime_ = datetime.datetime.now()
     print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
