@@ -50,8 +50,7 @@ def parse_args() -> Namespace:
     )
     p.add_argument(
         '-o', '--output_f', type = Path, default = './host_guest_complex.sdf',
-        help = ('path to an output .sdf/mol or .xyz file for the host-guest '
-            'complex; the output file type is determined by the suffix')
+        help = 'path to an output .sdf/mol file for the host-guest complex'
     )
     p.add_argument(
         '-d', '--host_cavity_dims', type = list, default = [4.0, 4.0, 4.0],
@@ -109,13 +108,7 @@ def main():
     )
     print('...optimised the host-guest complex!\n')
 
-    file_writers = {
-        '.sdf': Chem.MolToMolFile,
-        '.xyz': Chem.MolToXYZFile
-    }
-
-    file_writer = file_writers[args.output_f.suffix]
-    file_writer(host_guest_complex, args.output_f)
+    Chem.MolToMolFile(host_guest_complex, args.output_f)
 
     datetime_ = datetime.datetime.now()
     print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
