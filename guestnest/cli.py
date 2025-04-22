@@ -58,7 +58,8 @@ def parse_args() -> Namespace:
         help = 'number of host-guest complexes to generate'
     )
     p.add_argument(
-        '-d', '--host_cavity_dims', type = list, default = [4.0, 4.0, 4.0],
+        '-d', '--host_cavity_dims', type = float, nargs = 3,
+        default = [4.0, 4.0, 4.0],
         help = ('dimensions ([x, y, z]) of the spherical (if x = y = z) or '
             'elliptical (x = y != z) host molecule cavity')
     )
