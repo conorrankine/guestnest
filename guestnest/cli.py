@@ -108,7 +108,8 @@ def main():
     )
     print('...optimised the host-guest complex!\n')
 
-    Chem.MolToMolFile(host_guest_complex, args.output_f)
+    with Chem.SDWriter(args.output_f) as writer:
+        writer.write(host_guest_complex)
 
     datetime_ = datetime.datetime.now()
     print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
