@@ -42,33 +42,39 @@ def parse_args() -> Namespace:
     p = ArgumentParser()
 
     p.add_argument(
-        'host_sdf', type = Path,
+        'host_sdf',
+        type = Path,
         help = 'path to an .sdf/mol file for the host molecule'
     )
     p.add_argument(
-        'guest_sdf', type = Path,
+        'guest_sdf',
+        type = Path,
         help = 'path to an .sdf/mol file for the guest molecule'
     )
     p.add_argument(
-        '-o', '--output_f', type = Path, default = './host_guest_complex.sdf',
+        '-o', '--output_f',
+        type = Path, default = './host_guest_complex.sdf',
         help = 'path to an output .sdf/mol file for the host-guest complex'
     )
     p.add_argument(
-        '-n', '--n_complexes', type = int, default = 1,
+        '-n', '--n_complexes',
+        type = int, default = 1,
         help = 'number of host-guest complexes to generate'
     )
     p.add_argument(
-        '-d', '--host_cavity_dims', type = float, nargs = 3,
-        default = [4.0, 4.0, 4.0],
+        '-d', '--host_cavity_dims',
+        type = float, nargs = 3, default = [4.0, 4.0, 4.0],
         help = ('dimensions ([x, y, z]) of the spherical (if x = y = z) or '
             'elliptical (x = y != z) host molecule cavity')
     )
     p.add_argument(
-        '-s', '--vdw_scaling', type = float, default = 1.0,
+        '-s', '--vdw_scaling',
+        type = float, default = 1.0,
         help = 'scaling factor for van der Waals radii'
     )
     p.add_argument(
-        '-i', '--maxiter', type = int, default = 250,
+        '-i', '--maxiter',
+        type = int, default = 250,
         help = 'maximum number of iterations for the fitting algorithm'
     )
 
