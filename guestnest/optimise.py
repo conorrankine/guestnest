@@ -86,7 +86,7 @@ def random_fit(
         ),
         options = {
             'maxiter': maxiter,
-            'disp': True
+            'disp': False
         }
     )
 

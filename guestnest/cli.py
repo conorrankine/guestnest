@@ -20,6 +20,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 ###############################################################################
 
 import datetime
+import tqdm
 from . import optimise
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
@@ -97,9 +98,15 @@ def main():
 
     host_guest_complexes = []
 
-    for _ in range(args.n_complexes):
+    for _ in tqdm.tqdm(
+        range(args.n_complexes),
+        desc = 'creating complexes',
+        bar_format = (
+            '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]'
+        ),
+        ncols = 60
+    ):
 
-        print('starting nesting...')
         host_guest_complex, opt = optimise.random_fit(
             host,
             guest,
@@ -107,14 +114,11 @@ def main():
             host_cavity_dims = args.host_cavity_dims,
             vdw_scaling = args.vdw_scaling
         )
-        print(f'...finished nesting after {opt.nit} iterations!\n')
 
-        print('optimising the host-guest complex using MMFF94...')
         host_guest_complex = optimise.optimise_geom_mmff(
             host_guest_complex,
             fixed_atoms = [i for i in range(host.GetNumAtoms())]
         )
-        print('...optimised the host-guest complex!\n')
 
         host_guest_complexes.append(host_guest_complex)
 
@@ -123,7 +127,7 @@ def main():
             writer.write(host_guest_complex)
 
     datetime_ = datetime.datetime.now()
-    print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
+    print(f'\nfinished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
 
 ################################################################################
 ############################## PROGRAM STARTS HERE #############################
