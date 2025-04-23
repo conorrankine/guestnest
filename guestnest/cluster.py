@@ -22,17 +22,26 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem.rdMolAlign import GetBestRMS
-from scipy.cluster.hierarchy import linkage
+from scipy.cluster.hierarchy import linkage, fcluster
 
 # =============================================================================
 #                                  FUNCTIONS
 # =============================================================================
 
 def unique_mols(
-    mols: list[Chem.Mol]
+    mols: list[Chem.Mol],
+    rmsd_threshold: float = 0.1
 ) -> list[Chem.Mol]:
     
     rmsd_matrix = _get_rmsd_matrix(mols)
+
+    linkage_matrix = _get_linkage_matrix(rmsd_matrix)
+
+    clusters = fcluster(
+        linkage_matrix,
+        t = rmsd_threshold,
+        criterion = 'distance'
+    )
 
 def _get_rmsd_matrix(
     mols: list[Chem.Mol]
