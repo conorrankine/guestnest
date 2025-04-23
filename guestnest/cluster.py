@@ -43,7 +43,11 @@ def unique_mols(
         criterion = 'distance'
     )
 
-    unique_mol_idx = _get_cluster_representative_idx(clusters)
+    unique_mols = [
+        mols[idx] for idx in _get_cluster_representative_idx(clusters)
+    ]
+
+    return unique_mols
 
 def _get_rmsd_matrix(
     mols: list[Chem.Mol]
