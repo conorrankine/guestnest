@@ -22,6 +22,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem.rdMolAlign import GetBestRMS
+from scipy.cluster.hierarchy import linkage
 
 # =============================================================================
 #                                  FUNCTIONS
@@ -42,4 +43,23 @@ def _get_rmsd_matrix(
         for j in range(i+1, len(mols)):
             rmsd_matrix[i,j] = rmsd_matrix[j,i] = GetBestRMS(mols[i], mols[j])
 
-    return rmsd_matrix            
+    return rmsd_matrix
+
+def _get_linkage_matrix(
+    matrix: np.ndarray,
+    method: str = 'average',
+    metric: str = 'euclidean'
+) -> np.ndarray:
+    
+    dim1, dim2 = matrix.shape
+    if dim1 != dim2:
+        raise ValueError(
+            '`matrix` should be an array of shape (N,N), i.e. a 2D array with '
+            f'equal dimensions; got an array of shape {matrix.shape}'
+        )
+
+    return linkage(
+        matrix[np.triu_indices(dim1, k = 1)],
+        method = method,
+        metric = metric
+    )
