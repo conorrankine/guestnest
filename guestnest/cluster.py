@@ -43,6 +43,8 @@ def unique_mols(
         criterion = 'distance'
     )
 
+    unique_mol_idx = _get_cluster_representative_idx(clusters)
+
 def _get_rmsd_matrix(
     mols: list[Chem.Mol]
 ) -> np.ndarray:
@@ -72,3 +74,14 @@ def _get_linkage_matrix(
         method = method,
         metric = metric
     )
+
+def _get_cluster_representative_idx(
+    clusters: np.ndarray
+) -> list[int]:
+    
+    cluster_map = {}
+    for idx, cluster_id in enumerate(clusters):
+        if cluster_id not in cluster_map:
+            cluster_map[cluster_id] = idx
+
+    return sorted(cluster_map.values())
