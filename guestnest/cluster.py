@@ -127,6 +127,18 @@ def _get_linkage_matrix(
 def _get_cluster_representative_idx(
     clusters: np.ndarray
 ) -> list[int]:
+    """
+    Returns a sorted list of indices defining representatives for each cluster
+    in `clusters`.
+
+    Args:
+        clusters (np.ndarray): Cluster assignments as an array of shape (n, )
+            where each element is an integer that indicates cluster membership.
+
+    Returns:
+        list[int]: Sorted list of indices defining representatives for each
+            cluster in `clusters`.
+    """
     
     cluster_map = {}
     for idx, cluster_id in enumerate(clusters):
