@@ -21,8 +21,8 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem.rdMolAlign import GetBestRMS
 from scipy.cluster.hierarchy import linkage, fcluster
+from .geometry import get_rmsd
 
 # =============================================================================
 #                                  FUNCTIONS
@@ -56,7 +56,7 @@ def _get_rmsd_matrix(
     rmsd_matrix = np.zeros([len(mols), len(mols)])
     for i in range(len(mols)):
         for j in range(i+1, len(mols)):
-            rmsd_matrix[i,j] = rmsd_matrix[j,i] = GetBestRMS(mols[i], mols[j])
+            rmsd_matrix[i,j] = rmsd_matrix[j,i] = get_rmsd(mols[i], mols[j])
 
     return rmsd_matrix
 
