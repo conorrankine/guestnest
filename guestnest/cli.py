@@ -22,6 +22,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import tqdm
 from . import optimise
+from . import cluster
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from rdkit import Chem
@@ -59,7 +60,7 @@ def parse_args() -> Namespace:
     p.add_argument(
         '-n', '--n_complexes',
         type = int, default = 1,
-        help = 'number of host-guest complexes to generate'
+        help = 'number of host-guest geometries to generate'
     )
     p.add_argument(
         '-d', '--host_cavity_dims',
@@ -71,6 +72,11 @@ def parse_args() -> Namespace:
         '-s', '--vdw_scaling',
         type = float, default = 1.0,
         help = 'scaling factor for van der Waals radii'
+    )
+    p.add_argument(
+        '-r', '--rmsd_threshold',
+        type = float, default = 0.1,
+        help = 'RMSD threshold for pruning duplicated host-guest geometries'
     )
     p.add_argument(
         '-i', '--maxiter',
@@ -129,12 +135,20 @@ def main():
 
         host_guest_complexes.append(host_guest_complex)
 
+    print('\nfiltering duplicated complexes via heirarchical clustering...')
+    n = len(host_guest_complexes)
+    host_guest_complexes = cluster.unique_mols(
+        host_guest_complexes, rmsd_threshold = args.rmsd_threshold
+    )
+    m = len(host_guest_complexes)
+    print(f'...finished! [{n} -> {m} complexes] \n')
+
     with Chem.SDWriter(args.output_f) as writer:
         for host_guest_complex in host_guest_complexes:
             writer.write(host_guest_complex)
 
     datetime_ = datetime.datetime.now()
-    print(f'\nfinished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
+    print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
 
 # =============================================================================
 #                             PROGRAM STARTS HERE
