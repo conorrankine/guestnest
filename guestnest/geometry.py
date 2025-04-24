@@ -407,3 +407,30 @@ def get_vdw_distance_matrix(
     vdw_distance_matrix = mol2_vdw + mol1_vdw[:, None]
 
     return vdw_distance_matrix
+
+def get_rmsd(
+    mol1: Chem.Mol,
+    mol2: Chem.Mol
+) -> float:
+    """
+    Returns the root-mean-squared difference (RMSD) of the atomic positions in
+    Cartesian coordinates between `mol1` and `mol2`; the RMSD is calculated
+    directly *without* any alignment of the geometries of `mol1` and `mol2`.
+
+    Args:
+        mol1 (Chem.Mol): Molecule #1.
+        mol2 (Chem.Mol): Molecule #2.
+
+    Returns:
+        float: RMSD of the atomic positions between `mol1` and `mol2`.
+    """
+    
+    squared_diff = np.sum(
+        (get_coords(mol1) - get_coords(mol2))**2, axis = 1
+    )
+
+    mean_squared_diff = np.mean(squared_diff)
+      
+    rmsd = np.sqrt(mean_squared_diff)
+    
+    return rmsd
