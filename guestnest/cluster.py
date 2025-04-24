@@ -32,6 +32,20 @@ def unique_mols(
     mols: list[Chem.Mol],
     rmsd_threshold: float = 0.1
 ) -> list[Chem.Mol]:
+    """
+    Clusters molecules hierarchically using the root-mean-squared distance
+    (RMSD) as the similarity metric and returns a list of representative
+    molecules for each cluster.
+
+    Args:
+        mols (list[Chem.Mol]): List of molecules to cluster hierarchically.
+        rmsd_threshold (float, optional): RMSD threshold for hierarchical
+            clustering in Angstroems (molecules with RMSD below this threshold
+            will be considered to belong to the same cluster). Defaults to 0.1.
+
+    Returns:
+        list[Chem.Mol]: List of representative molecules for each cluster.
+    """
     
     rmsd_matrix = _get_rmsd_matrix(mols)
 
