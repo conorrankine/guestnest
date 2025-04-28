@@ -30,7 +30,8 @@ from .geometry import get_rmsd
 
 def unique_mols(
     mols: list[Chem.Mol],
-    rmsd_threshold: float = 0.1
+    rmsd_threshold: float = 0.1,
+    method: str = 'centroid'
 ) -> list[Chem.Mol]:
     """
     Clusters molecules hierarchically using the root-mean-squared distance
@@ -42,6 +43,12 @@ def unique_mols(
         rmsd_threshold (float, optional): RMSD threshold for hierarchical
             clustering in Angstroems (molecules with RMSD below this threshold
             will be considered to belong to the same cluster). Defaults to 0.1.
+        method (str, optional): Method for picking representative molecules:
+            - 'centroid': select the molecule with the minimum average RMSD
+                to all other molecules in a given cluster;
+            - 'medoid': select the molecule with the minimum sum RMSD to all
+                other molecules in a given cluster.
+            Defaults to 'centroid'.
 
     Returns:
         list[Chem.Mol]: List of representative molecules for each cluster.
@@ -58,7 +65,9 @@ def unique_mols(
     )
 
     cluster_representatives = _pick_cluster_representatives(
-        cluster_assignments, rmsd_matrix
+        cluster_assignments,
+        rmsd_matrix,
+        method = method
     )
 
     unique_mols = [mols[idx] for idx in cluster_representatives]
