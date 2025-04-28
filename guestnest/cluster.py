@@ -204,10 +204,18 @@ def _get_cluster_centroid(
         distance_matrix (np.ndarray): Distance matrix; square symmetric matrix
             of shape (n, n) where distance_matrix[i,j] stores the distance
             between the i$^{th}$ and j$^{th}$ cluster members.
+
+    Raises:
+        ValueError: If `cluster_indices` is an empty array.
         
     Returns:
         int: Index corresponding to the centroid of the cluster.
     """
+
+    if len(cluster_indices) == 0:
+        raise ValueError(
+            'can\'t pick the centroid of an empty cluster'
+        )
     
     avg_distances = []
     for i in cluster_indices:
@@ -230,10 +238,18 @@ def _get_cluster_medoid(
         distance_matrix (np.ndarray): Distance matrix; square symmetric matrix
             of shape (n, n) where distance_matrix[i,j] stores the distance
             between the i$^{th}$ and j$^{th}$ cluster members.
+
+    Raises:
+        ValueError: If `cluster_indices` is an empty array.
         
     Returns:
         int: Index corresponding to the medoid of the cluster.
     """
+
+    if len(cluster_indices) == 0:
+        raise ValueError(
+            'can\'t pick the medoid of an empty cluster'
+        )
     
     sum_distances = []
     for i in cluster_indices:
