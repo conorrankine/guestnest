@@ -147,6 +147,31 @@ def _get_cluster_representative_idx(
 
     return sorted(cluster_map.values())
 
+def _group_indices_by_cluster(
+    cluster_assignments: np.ndarray
+) -> dict[int, np.ndarray]:
+    """
+    Returns a dictionary mapping cluster assigments to the indices of the
+    cluster members.
+
+    Args:
+        cluster_assignments (np.ndarray): 1D array of integer labels where
+            the value of the i$^{th}$ element indicates the cluster to
+            which the i$^{th}$ datapoint is assigned membership.
+
+    Returns:
+        dict[int, np.ndarray]: Dictionary mapping cluster assigments to the
+            indices of the cluster members where:
+                - keys are integer labels for the clusters;
+                - values are 1D arrays containing the indices of datapoints
+                  that are assigned membership to the cluster.
+    """
+
+    return {
+        cluster_id: np.where(cluster_assignments == cluster_id)[0]
+            for cluster_id in np.unique(cluster_assignments)
+    }
+
 def _get_cluster_centroid(
     cluster_indices: np.ndarray,
     distance_matrix: np.ndarray
