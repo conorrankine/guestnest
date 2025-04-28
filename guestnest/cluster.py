@@ -166,10 +166,10 @@ def _get_cluster_centroid(
     
     avg_distances = []
     for i in cluster_indices:
-        distances = [
+        avg_distance = np.mean(
             distance_matrix[i, j] for j in cluster_indices if j != i
-        ]
-        avg_distances.append(np.mean(distances))
+        )
+        avg_distances.append(avg_distance)
     
     return cluster_indices[np.argmin(avg_distances)]
 
