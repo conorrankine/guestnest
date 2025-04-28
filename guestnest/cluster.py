@@ -146,3 +146,29 @@ def _get_cluster_representative_idx(
             cluster_map[cluster_id] = idx
 
     return sorted(cluster_map.values())
+
+def _get_cluster_centroid(
+    cluster_indices: np.ndarray,
+    distance_matrix: np.ndarray
+) -> int:
+    """
+    Returns the index corresponding to the centroid of the cluster.
+    
+    Args:
+        cluster_indices (np.ndarray): Indices defining cluster members.
+        distance_matrix (np.ndarray): Distance matrix; square symmetric matrix
+            of shape (n, n) where distance_matrix[i,j] stores the distance
+            between the i$^{th}$ and j$^{th}$ cluster members.
+        
+    Returns:
+        int: Index corresponding to the centroid of the cluster.
+    """
+    
+    avg_distances = []
+    for i in cluster_indices:
+        distances = [
+            distance_matrix[i, j] for j in cluster_indices if j != i
+        ]
+        avg_distances.append(np.mean(distances))
+    
+    return cluster_indices[np.argmin(avg_distances)]
