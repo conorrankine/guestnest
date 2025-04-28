@@ -54,6 +54,9 @@ def unique_mols(
     Returns:
         list[Chem.Mol]: List of representative molecules for each cluster.
     """
+
+    if len(mols) <= 1:
+        return mols
     
     rmsd_matrix = _get_rmsd_matrix(mols)
 
