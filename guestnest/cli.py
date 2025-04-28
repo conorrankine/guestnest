@@ -15,19 +15,21 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-###############################################################################
-############################### LIBRARY IMPORTS ###############################
-###############################################################################
+# =============================================================================
+#                               LIBRARY IMPORTS
+# =============================================================================
 
 import datetime
+import tqdm
 from . import optimise
+from . import cluster
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from rdkit import Chem
 
-###############################################################################
-############################## ARGUMENT PARSING ###############################
-###############################################################################
+# =============================================================================
+#                               ARGUMENT PARSING
+# =============================================================================
 
 def parse_args() -> Namespace:
     """
@@ -41,29 +43,44 @@ def parse_args() -> Namespace:
     p = ArgumentParser()
 
     p.add_argument(
-        'host_sdf', type = Path,
+        'host_sdf',
+        type = Path,
         help = 'path to an .sdf/mol file for the host molecule'
     )
     p.add_argument(
-        'guest_sdf', type = Path,
+        'guest_sdf',
+        type = Path,
         help = 'path to an .sdf/mol file for the guest molecule'
     )
     p.add_argument(
-        '-o', '--output_f', type = Path, default = './host_guest_complex.sdf',
-        help = ('path to an output .sdf/mol or .xyz file for the host-guest '
-            'complex; the output file type is determined by the suffix')
+        '-o', '--output_f',
+        type = Path, default = './host_guest_complex.sdf',
+        help = 'path to an output .sdf/mol file for the host-guest complex'
     )
     p.add_argument(
-        '-d', '--host_cavity_dims', type = list, default = [4.0, 4.0, 4.0],
+        '-n', '--n_complexes',
+        type = int, default = 1,
+        help = 'number of host-guest geometries to generate'
+    )
+    p.add_argument(
+        '-d', '--host_cavity_dims',
+        type = float, nargs = 3, default = [4.0, 4.0, 4.0],
         help = ('dimensions ([x, y, z]) of the spherical (if x = y = z) or '
             'elliptical (x = y != z) host molecule cavity')
     )
     p.add_argument(
-        '-s', '--vdw_scaling', type = float, default = 1.0,
+        '-s', '--vdw_scaling',
+        type = float, default = 1.0,
         help = 'scaling factor for van der Waals radii'
     )
     p.add_argument(
-        '-i', '--maxiter', type = int, default = 250,
+        '-r', '--rmsd_threshold',
+        type = float, default = 0.1,
+        help = 'RMSD threshold for pruning duplicated host-guest geometries'
+    )
+    p.add_argument(
+        '-i', '--maxiter',
+        type = int, default = 250,
         help = 'maximum number of iterations for the fitting algorithm'
     )
 
@@ -71,9 +88,9 @@ def parse_args() -> Namespace:
 
     return args
 
-###############################################################################
-################################ MAIN FUNCTION ################################
-###############################################################################
+# =============================================================================
+#                                MAIN FUNCTION
+# =============================================================================
 
 def main():
 
@@ -92,41 +109,54 @@ def main():
         )
     print()
 
-    print('starting nesting...')
-    host_guest_complex, opt = optimise.random_fit(
-        host,
-        guest,
-        maxiter = args.maxiter,
-        host_cavity_dims = args.host_cavity_dims,
-        vdw_scaling = args.vdw_scaling
+    host_guest_complexes = []
+
+    for _ in tqdm.tqdm(
+        range(args.n_complexes),
+        desc = 'creating complexes',
+        bar_format = (
+            '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]'
+        ),
+        ncols = 60
+    ):
+
+        host_guest_complex, opt = optimise.random_fit(
+            host,
+            guest,
+            maxiter = args.maxiter,
+            host_cavity_dims = args.host_cavity_dims,
+            vdw_scaling = args.vdw_scaling
+        )
+
+        host_guest_complex = optimise.optimise_geom_mmff(
+            host_guest_complex,
+            fixed_atoms = [i for i in range(host.GetNumAtoms())]
+        )
+
+        host_guest_complexes.append(host_guest_complex)
+
+    print('\nfiltering duplicated complexes via heirarchical clustering...')
+    n = len(host_guest_complexes)
+    host_guest_complexes = cluster.unique_mols(
+        host_guest_complexes, rmsd_threshold = args.rmsd_threshold
     )
-    print(f'...finished nesting after {opt.nit} iterations!\n')
+    m = len(host_guest_complexes)
+    print(f'...finished! [{n} -> {m} complexes] \n')
 
-    print('optimising the host-guest complex using MMFF94...')
-    host_guest_complex = optimise.optimise_geom_mmff(
-        host_guest_complex,
-        fixed_atoms = [i for i in range(host.GetNumAtoms())]
-    )
-    print('...optimised the host-guest complex!\n')
-
-    file_writers = {
-        '.sdf': Chem.MolToMolFile,
-        '.xyz': Chem.MolToXYZFile
-    }
-
-    file_writer = file_writers[args.output_f.suffix]
-    file_writer(host_guest_complex, args.output_f)
+    with Chem.SDWriter(args.output_f) as writer:
+        for host_guest_complex in host_guest_complexes:
+            writer.write(host_guest_complex)
 
     datetime_ = datetime.datetime.now()
     print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
 
-################################################################################
-############################## PROGRAM STARTS HERE #############################
-################################################################################
+# =============================================================================
+#                             PROGRAM STARTS HERE
+# =============================================================================
 
 if __name__ == '__main__':
     main()
 
-################################################################################
-############################### PROGRAM ENDS HERE ##############################
-################################################################################
+# =============================================================================
+#                              PROGRAM ENDS HERE
+# =============================================================================
