@@ -167,26 +167,30 @@ def _pick_cluster_representatives(
     """
     
     representatives = []
+
+    method_map = {
+        'centroid': _get_cluster_centroid,
+        'medoid': _get_cluster_medoid
+    }
+
+    if method not in method_map:
+        raise ValueError(
+            f'`method` should be one of {[key for key in method_map.keys()]}; '
+            f'got {method}'
+        )
+
     cluster_group_map = _group_indices_by_cluster(cluster_assignments)
 
     for cluster_id in sorted(cluster_group_map.keys()):
         cluster_indices = cluster_group_map[cluster_id]
         if len(cluster_indices) == 1:
-            representatives.append(cluster_indices[0])
+            representatives.append(
+                cluster_indices[0]
+            )
         else:
-            if method == 'centroid':
-                representatives.append(
-                    _get_cluster_centroid(cluster_indices, distance_matrix)
-                )
-            elif method == 'medoid':
-                representatives.append(
-                    _get_cluster_medoid(cluster_indices, distance_matrix)
-                )
-            else:
-                raise ValueError(
-                    '`method` should be either \'centroid\' or \'medoid\'; '
-                    f'got {method}'
-                )
+            representatives.append(
+                method_map[method](cluster_indices, distance_matrix)
+            )
 
     return sorted(representatives)    
 
@@ -235,7 +239,7 @@ def _get_cluster_centroid(
     avg_distances = []
     for i in cluster_indices:
         avg_distance = np.mean(
-            distance_matrix[i, j] for j in cluster_indices if j != i
+            [distance_matrix[i, j] for j in cluster_indices if j != i]
         )
         avg_distances.append(avg_distance)
     
@@ -261,7 +265,7 @@ def _get_cluster_medoid(
     sum_distances = []
     for i in cluster_indices:
         sum_distance = np.sum(
-            distance_matrix[i, j] for j in cluster_indices if j != i
+            [distance_matrix[i, j] for j in cluster_indices if j != i]
         )
         sum_distances.append(sum_distance)
     
