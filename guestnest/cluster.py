@@ -51,15 +51,17 @@ def unique_mols(
 
     linkage_matrix = _get_linkage_matrix(rmsd_matrix)
 
-    clusters = fcluster(
+    cluster_assignments = fcluster(
         linkage_matrix,
         t = rmsd_threshold,
         criterion = 'distance'
     )
 
-    unique_mols = [
-        mols[idx] for idx in _get_cluster_representative_idx(clusters)
-    ]
+    cluster_representatives = _pick_cluster_representatives(
+        cluster_assignments, rmsd_matrix
+    )
+
+    unique_mols = [mols[idx] for idx in cluster_representatives]
 
     return unique_mols
 
@@ -124,28 +126,60 @@ def _get_linkage_matrix(
         metric = metric
     )
 
-def _get_cluster_representative_idx(
-    clusters: np.ndarray
+def _pick_cluster_representatives(
+    cluster_assignments: np.ndarray,
+    distance_matrix: np.ndarray,
+    method: str = 'centroid'
 ) -> list[int]:
     """
-    Returns a sorted list of indices defining representatives for each cluster
-    in `clusters`.
-
+    Picks a single representative datapoint from each cluster according to a
+    protocol (e.g., centroids, medoids) and returns their indices.
+    
     Args:
-        clusters (np.ndarray): Cluster assignments as an array of shape (n, )
-            where each element is an integer that indicates cluster membership.
-
+        cluster_assignments (np.ndarray): 1D array of integer labels where
+            the value of the i$^{th}$ element indicates the cluster to
+            which the i$^{th}$ datapoint is assigned membership.
+        distance_matrix (np.ndarray): Distance matrix; square symmetric matrix
+            of shape (n, n) where distance_matrix[i,j] stores the distance
+            between the i$^{th}$ and j$^{th}$ cluster members.
+        method (str, optional): Method for picking representative datapoints:
+            - 'centroid': select the datapoint with the minimum average
+                distance to all other datapoints in a given cluster;
+            - 'medoid': select the datapoint with the minimum sum distance to
+                all other datapoints in a given cluster.
+            Defaults to 'centroid'.
+            
     Returns:
-        list[int]: Sorted list of indices defining representatives for each
-            cluster in `clusters`.
+        list[int]: Sorted list of indices corresponding to the representative
+            datapoint for each cluster.
+            
+    Raises:
+        ValueError: If `method` is not one of 'centroid' or 'medoid'.
     """
     
-    cluster_map = {}
-    for idx, cluster_id in enumerate(clusters):
-        if cluster_id not in cluster_map:
-            cluster_map[cluster_id] = idx
+    representatives = []
+    cluster_group_map = _group_indices_by_cluster(cluster_assignments)
 
-    return sorted(cluster_map.values())
+    for cluster_id in sorted(cluster_group_map.keys()):
+        cluster_indices = cluster_group_map[cluster_id]
+        if len(cluster_indices) == 1:
+            representatives.append(cluster_indices[0])
+        else:
+            if method == 'centroid':
+                representatives.append(
+                    _get_cluster_centroid(cluster_indices, distance_matrix)
+                )
+            elif method == 'medoid':
+                representatives.append(
+                    _get_cluster_medoid(cluster_indices, distance_matrix)
+                )
+            else:
+                raise ValueError(
+                    '`method` should be either \'centroid\' or \'medoid\'; '
+                    f'got {method}'
+                )
+
+    return sorted(representatives)    
 
 def _group_indices_by_cluster(
     cluster_assignments: np.ndarray
