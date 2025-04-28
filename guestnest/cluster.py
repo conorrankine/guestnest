@@ -51,12 +51,21 @@ def unique_mols(
                 other molecules in a given cluster.
             Defaults to 'centroid'.
 
+    Raises:
+        ValueError: If `rmsd_threshold` is non-numeric or, otherwise, < 0.0.
+
     Returns:
         list[Chem.Mol]: List of representative molecules for each cluster.
     """
 
     if len(mols) <= 1:
         return mols
+    
+    if not isinstance(rmsd_threshold, (int, float)) or rmsd_threshold < 0:
+        raise ValueError(
+            f'`rmsd_threshold` should be a non-negative number; got '
+            f'{rmsd_threshold}'
+        )
     
     rmsd_matrix = _get_rmsd_matrix(mols)
 
