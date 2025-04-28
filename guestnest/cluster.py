@@ -22,6 +22,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 from rdkit import Chem
 from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.spatial.distance import squareform
 from .geometry import get_rmsd
 
 # =============================================================================
@@ -56,10 +57,8 @@ def unique_mols(
     
     rmsd_matrix = _get_rmsd_matrix(mols)
 
-    linkage_matrix = _get_linkage_matrix(rmsd_matrix)
-
     cluster_assignments = fcluster(
-        linkage_matrix,
+        linkage(squareform(rmsd_matrix), method = 'average'),
         t = rmsd_threshold,
         criterion = 'distance'
     )
@@ -96,44 +95,6 @@ def _get_rmsd_matrix(
             rmsd_matrix[i,j] = rmsd_matrix[j,i] = get_rmsd(mols[i], mols[j])
 
     return rmsd_matrix
-
-def _get_linkage_matrix(
-    matrix: np.ndarray,
-    method: str = 'average',
-    metric: str = 'euclidean'
-) -> np.ndarray:
-    """
-    Calculates the hierarchical clustering linkage matrix from a square
-    symmetric distance matrix.
-
-    Args:
-        matrix (np.ndarray): Distance matrix as an array of shape (n, n).
-        method (str, optional): Linkage method; see the documentation for
-            scipy.cluster.hierarchy.linkage() for a full list of options.
-            Defaults to 'average'.
-        metric (str, optional): Linkage metric; see the documentation for
-            scipy.cluster.hierarchy.linkage() for a full list of options.
-            Defaults to 'euclidean'.
-
-    Raises:
-        ValueError: If `matrix` is not a square matrix.
-
-    Returns:
-        np.ndarray: Hierarchical clustering linkage matrix.
-    """
-    
-    dim1, dim2 = matrix.shape
-    if dim1 != dim2:
-        raise ValueError(
-            '`matrix` should be an array of shape (n, n), i.e. a 2D array '
-            f'with equal dimensions; got an array of shape {matrix.shape}'
-        )
-
-    return linkage(
-        matrix[np.triu_indices(dim1, k = 1)],
-        method = method,
-        metric = metric
-    )
 
 def _pick_cluster_representatives(
     cluster_assignments: np.ndarray,
