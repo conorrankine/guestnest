@@ -172,3 +172,29 @@ def _get_cluster_centroid(
         avg_distances.append(np.mean(distances))
     
     return cluster_indices[np.argmin(avg_distances)]
+
+def _get_cluster_medoid(
+    cluster_indices: np.ndarray,
+    distance_matrix: np.ndarray
+) -> int:
+    """
+    Returns the index corresponding to the medoid of the cluster.
+    
+    Args:
+        cluster_indices (np.ndarray): Indices defining cluster members.
+        distance_matrix (np.ndarray): Distance matrix; square symmetric matrix
+            of shape (n, n) where distance_matrix[i,j] stores the distance
+            between the i$^{th}$ and j$^{th}$ cluster members.
+        
+    Returns:
+        int: Index corresponding to the medoid of the cluster.
+    """
+    
+    sum_distances = []
+    for i in cluster_indices:
+        sum_distance = np.sum(
+            distance_matrix[i, j] for j in cluster_indices if j != i
+        )
+        sum_distances.append(sum_distance)
+    
+    return cluster_indices[np.argmin(sum_distances)]
