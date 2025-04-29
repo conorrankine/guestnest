@@ -192,7 +192,7 @@ def optimise_geom_mmff(
 
     return mol
 
-def _eval_energy_mmff(
+def eval_energy_mmff(
     mol: Chem.Mol
 ) -> float:
     
