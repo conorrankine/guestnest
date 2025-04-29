@@ -133,6 +133,10 @@ def main():
             fixed_atoms = [i for i in range(host.GetNumAtoms())]
         )
 
+        host_guest_complex.SetDoubleProp(
+            'E(MMFF)', optimise.eval_energy_mmff(host_guest_complex)
+        )
+
         host_guest_complexes.append(host_guest_complex)
 
     print('\nfiltering duplicated complexes via heirarchical clustering...')
@@ -143,19 +147,21 @@ def main():
     m = len(host_guest_complexes)
     print(f'...finished! [{n} -> {m} complexes] \n')
 
-    mmff_energies = [
-        optimise.eval_energy_mmff(host_guest_complex)
-            for host_guest_complex in host_guest_complexes
-    ]
-    mmff_energies, host_guest_complexes = (
-        zip(*sorted(zip(mmff_energies, host_guest_complexes)))
+    host_guest_complexes = sorted(
+        host_guest_complexes, key = lambda mol: mol.GetDoubleProp('E(MMFF)')
     )
 
     print('-' * 24)
-    print(f'{"complex":<6}{"E(MMFF) / a.u.":>18}')
+    print(
+        f'{"complex":<6}'
+        f'{"E(MMFF) / a.u.":>18}'
+    )
     print('-' * 24)
-    for i, mmff_energy in enumerate(mmff_energies, start = 1):
-        print(f'{i:06d}{mmff_energy:>18.6f}')
+    for i, host_guest_complex in enumerate(host_guest_complexes, start = 1):
+        print(
+            f'{i:06d}'
+            f'{host_guest_complex.GetDoubleProp("E(MMFF)"):>18.6f}'
+        )
     print('-' * 24 + '\n')
 
     with Chem.SDWriter(args.output_f) as writer:
