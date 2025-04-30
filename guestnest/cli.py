@@ -19,11 +19,11 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 #                               LIBRARY IMPORTS
 # =============================================================================
 
-import numpy as np
 import datetime
 import tqdm
 from . import optimise
 from . import cluster
+from numpy.random import default_rng
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from rdkit import Chem
@@ -82,7 +82,12 @@ def parse_args() -> Namespace:
     p.add_argument(
         '-i', '--maxiter',
         type = int, default = 250,
-        help = 'maximum number of iterations for the fitting algorithm'
+        help = 'max number of iterations for host-guest geometry generation'
+    )
+    p.add_argument(
+        '-r', '--random_seed',
+        type = int, default = None,
+        help = 'random seed for host-guest geometry generation'
     )
 
     args = p.parse_args()
@@ -110,6 +115,8 @@ def main():
         )
     print()
 
+    rng = default_rng(args.random_seed)
+
     host_guest_complexes = []
 
     for _ in tqdm.tqdm(
@@ -126,7 +133,8 @@ def main():
             guest,
             maxiter = args.maxiter,
             host_cavity_dims = args.host_cavity_dims,
-            vdw_scaling = args.vdw_scaling
+            vdw_scaling = args.vdw_scaling,
+            rng = rng
         )
 
         host_guest_complex = optimise.optimise_geom_mmff(
