@@ -19,6 +19,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 #                               LIBRARY IMPORTS
 # =============================================================================
 
+import numpy as np
 import datetime
 import tqdm
 from . import optimise
@@ -74,7 +75,7 @@ def parse_args() -> Namespace:
         help = 'scaling factor for van der Waals radii'
     )
     p.add_argument(
-        '-r', '--rmsd_threshold',
+        '-t', '--rmsd_threshold',
         type = float, default = 0.1,
         help = 'RMSD threshold for pruning duplicated host-guest geometries'
     )
