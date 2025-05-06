@@ -450,13 +450,8 @@ def get_rmsd_matrix(
     Returns:
         np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
     """
-    
-    rmsd_matrix = np.zeros([len(mols), len(mols)])
-    for i in range(len(mols)):
-        for j in range(i+1, len(mols)):
-            rmsd_matrix[i,j] = rmsd_matrix[j,i] = get_rmsd(mols[i], mols[j])
 
-    return rmsd_matrix
+    return _get_rmsd_matrix_iterative(mols)
 
 def _get_rmsd_matrix_vectorised(
     mols: list[Chem.Mol]
@@ -522,5 +517,28 @@ def _get_rmsd_matrix_block_vectorised(
             rmsd_matrix[block1_start:block1_end, block2_start:block2_end] = (
                 np.sqrt(mean_squared_diff)
             )
+
+    return rmsd_matrix
+
+def _get_rmsd_matrix_iterative(
+    mols: list[Chem.Mol]
+) -> np.ndarray:
+    """
+    Calculates the pairwise root-mean-squared distance (RMSD) matrix for a
+    list of molecules iteratively by looping over all $i$-$j$ pairs.
+
+    This is a super-slow, but memory-efficient, approach.
+
+    Args:
+        mols (list[Chem.Mol]): List of molecules.
+
+    Returns:
+        np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
+    """
+    
+    rmsd_matrix = np.zeros([len(mols), len(mols)])
+    for i in range(len(mols)):
+        for j in range(i+1, len(mols)):
+            rmsd_matrix[i,j] = rmsd_matrix[j,i] = get_rmsd(mols[i], mols[j])
 
     return rmsd_matrix
