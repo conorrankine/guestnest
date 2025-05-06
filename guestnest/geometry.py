@@ -434,3 +434,26 @@ def get_rmsd(
     rmsd = np.sqrt(mean_squared_diff)
     
     return rmsd
+
+def get_rmsd_matrix(
+    mols: list[Chem.Mol]
+) -> np.ndarray:
+    """
+    Calculates the pairwise root-mean-squared distance (RMSD) matrix for a
+    list of molecules; the pairwise RMSD matrix is a square symmetric matrix
+    where each element, ij, corresponds to the RMSD between the i$^{th}$ and
+    the j$^{th}$ molecules in `mols`.
+
+    Args:
+        mols (list[Chem.Mol]): List of molecules.
+
+    Returns:
+        np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
+    """
+    
+    rmsd_matrix = np.zeros([len(mols), len(mols)])
+    for i in range(len(mols)):
+        for j in range(i+1, len(mols)):
+            rmsd_matrix[i,j] = rmsd_matrix[j,i] = get_rmsd(mols[i], mols[j])
+
+    return rmsd_matrix
