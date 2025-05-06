@@ -19,6 +19,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 #                               LIBRARY IMPORTS
 # =============================================================================
 
+import psutil
 import numpy as np
 from rdkit import Chem
 from copy import deepcopy
@@ -436,7 +437,8 @@ def get_rmsd(
     return rmsd
 
 def get_rmsd_matrix(
-    mols: list[Chem.Mol]
+    mols: list[Chem.Mol],
+    mem_safety_fraction: float = 0.8
 ) -> np.ndarray:
     """
     Calculates the pairwise root-mean-squared distance (RMSD) matrix for a
@@ -446,12 +448,30 @@ def get_rmsd_matrix(
 
     Args:
         mols (list[Chem.Mol]): List of molecules.
+        mem_safety_fraction (float, optional): Fraction of the available
+            memory ring-fenced as 'safe for use'. Defaults to 0.8.
 
     Returns:
         np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
     """
 
-    return _get_rmsd_matrix_iterative(mols)
+    available_mem = (
+        psutil.virtual_memory().available * mem_safety_fraction
+    )
+
+    estimated_mem = _estimate_mem_for_rmsd_matrix_calc(
+        n_mols = len(mols), n_atoms = mols[0].GetNumAtoms()
+    )
+
+    print(f'available mem: {(available_mem / (1024**3)):.3f} GB')
+    print(f'required mem (estm.): {(estimated_mem / (1024**3)):.3f} GB')
+
+    if estimated_mem < available_mem:
+        print('calculating the RMSD matrix using full vectorisation')
+        return _get_rmsd_matrix_vectorised(mols)
+    else:
+        print('calculating the RMSD matrix using block vectorisation')
+        return _get_rmsd_matrix_block_vectorised(mols)
 
 def _get_rmsd_matrix_vectorised(
     mols: list[Chem.Mol]
