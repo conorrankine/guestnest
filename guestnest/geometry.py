@@ -465,6 +465,8 @@ def _get_rmsd_matrix_vectorised(
     Calculates the pairwise root-mean-squared distance (RMSD) matrix for a
     list of molecules in a single vectorised operation using broadcasting.
 
+    This is a super-fast, but memory-intensive, approach.
+
     Args:
         mols (list[Chem.Mol]): List of molecules.
 
@@ -491,6 +493,8 @@ def _get_rmsd_matrix_block_vectorised(
     Calculates the pairwise root-mean-squared distance (RMSD) matrix for a
     list of molecules in a series of blocked ('chunk-by-chunk') vectorised
     operations using broadcasting.
+
+    This is an approach that balances speed and memory usage.
 
     Args:
         mols (list[Chem.Mol]): List of molecules.
