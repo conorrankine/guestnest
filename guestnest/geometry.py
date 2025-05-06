@@ -455,23 +455,31 @@ def get_rmsd_matrix(
         np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
     """
 
+    n_mols = len(mols)
+    n_atoms = mols[0].GetNumAtoms()
+
+    estimated_mem = _estimate_mem_for_rmsd_matrix_calc(
+        n_mols, n_atoms
+    )
+
     available_mem = (
         psutil.virtual_memory().available * mem_safety_fraction
     )
 
-    estimated_mem = _estimate_mem_for_rmsd_matrix_calc(
-        n_mols = len(mols), n_atoms = mols[0].GetNumAtoms()
-    )
-
-    print(f'available mem: {(available_mem / (1024**3)):.3f} GB')
-    print(f'required mem (estm.): {(estimated_mem / (1024**3)):.3f} GB')
+    print(f'- available mem: {(available_mem / (1024**3)):.2f} GB')
+    print(f'- required mem (estm.): {(estimated_mem / (1024**3)):.2f} GB')
 
     if estimated_mem < available_mem:
-        print('calculating the RMSD matrix using full vectorisation')
+        print('- method: full vectorisation')
         return _get_rmsd_matrix_vectorised(mols)
     else:
-        print('calculating the RMSD matrix using block vectorisation')
-        return _get_rmsd_matrix_block_vectorised(mols)
+        print('- method: block vectorisation')
+        block_size = _get_optimal_block_size(
+            n_mols, n_atoms, available_mem
+        )
+        return _get_rmsd_matrix_block_vectorised(
+            mols, block_size = block_size
+        )
 
 def _get_rmsd_matrix_vectorised(
     mols: list[Chem.Mol]
