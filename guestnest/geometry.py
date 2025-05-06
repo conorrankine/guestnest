@@ -563,6 +563,34 @@ def _get_rmsd_matrix_iterative(
 
     return rmsd_matrix
 
+def _get_optimal_block_size(
+    n_mols: int,
+    n_atoms: int,
+    available_mem: float
+) -> int:
+    """
+    Calculates the optimal block size to use in the block-vectorised
+    calculation of the RMSD matrix implemented in the \`_get_rmsd_matrix_
+    block_vectorised()\` function.
+
+    Args:
+        n_mols (int): Number of molecules.
+        n_atoms (int): Number of atoms per molecule.
+        available_mem (float): Available memory (in bytes).
+
+    Returns:
+        int: Optimal block size.
+    """
+    
+    estimated_mem = _estimate_mem_for_rmsd_matrix_calc(
+        n_mols = n_mols, n_atoms = n_atoms
+    )
+
+    mem_ratio = (available_mem / estimated_mem)**0.5
+    optimal_block_size = max(1, min(int(mem_ratio * n_mols), n_mols))
+
+    return optimal_block_size
+
 def _estimate_mem_for_rmsd_matrix_calc(
     n_mols: int,
     n_atoms: int
