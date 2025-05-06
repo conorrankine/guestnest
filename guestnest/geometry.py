@@ -542,3 +542,30 @@ def _get_rmsd_matrix_iterative(
             rmsd_matrix[i,j] = rmsd_matrix[j,i] = get_rmsd(mols[i], mols[j])
 
     return rmsd_matrix
+
+def _estimate_mem_for_rmsd_matrix_calc(
+    n_mols: int,
+    n_atoms: int
+) -> float:
+    """
+    Estimates the memory usage (in bytes) of the intermediate arrays used in
+    the vectorised calculation of the RMSD matrix implemented in the
+    `_get_rmsd_matrix_vectorised()\` function.
+
+    Args:
+        n_mols (int): Number of molecules.
+        n_atoms (int): Number of atoms per molecule.
+
+    Returns:
+        float: Estimated memory usage (in bytes).
+    """
+    
+    estimated_mem = (
+        (n_mols * n_atoms * 3 * 8)              # coords
+        + (2 * (n_mols * n_atoms * 3 * 8))      # broadcasting intermediates
+        + (n_mols * n_mols * n_atoms * 8)       # squared diff
+        + (n_mols * n_mols * 8)                 # mean squared diff
+        + (n_mols * n_mols * 8)                 # rmsd_matrix
+    )
+    
+    return estimated_mem
