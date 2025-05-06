@@ -457,3 +457,28 @@ def get_rmsd_matrix(
             rmsd_matrix[i,j] = rmsd_matrix[j,i] = get_rmsd(mols[i], mols[j])
 
     return rmsd_matrix
+
+def _get_rmsd_matrix_vectorised(
+    mols: list[Chem.Mol]
+) -> np.ndarray:
+    """
+    Calculates the pairwise root-mean-squared distance (RMSD) matrix for a
+    list of molecules in a single vectorised operation using broadcasting.
+
+    Args:
+        mols (list[Chem.Mol]): List of molecules.
+
+    Returns:
+        np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
+    """
+    
+    coords = np.array([get_coords(mol) for mol in mols])
+
+    coords1 = coords[:, np.newaxis, :, :]
+    coords2 = coords[np.newaxis, :, :, :]
+
+    squared_diff = np.sum((coords1 - coords2)**2, axis = -1)
+    mean_squared_diff = np.mean(squared_diff, axis = -1)
+    rmsd_matrix = np.sqrt(mean_squared_diff)
+
+    return rmsd_matrix
