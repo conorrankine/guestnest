@@ -482,3 +482,41 @@ def _get_rmsd_matrix_vectorised(
     rmsd_matrix = np.sqrt(mean_squared_diff)
 
     return rmsd_matrix
+
+def _get_rmsd_matrix_block_vectorised(
+    mols: list[Chem.Mol],
+    block_size: int = 100
+) -> np.ndarray:
+    """
+    Calculates the pairwise root-mean-squared distance (RMSD) matrix for a
+    list of molecules in a series of blocked ('chunk-by-chunk') vectorised
+    operations using broadcasting.
+
+    Args:
+        mols (list[Chem.Mol]): List of molecules.
+
+    Returns:
+        np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
+    """
+    
+    rmsd_matrix = np.zeros((len(mols), len(mols)))
+
+    coords = np.array([get_coords(mol) for mol in mols])
+
+    for block1_start in range(0, len(mols), block_size):
+        block1_end = min(block1_start + block_size, len(mols))
+        block1_coords = coords[block1_start:block1_end]
+        coords1 = block1_coords[:, np.newaxis, :, :]
+
+        for block2_start in range(0, len(mols), block_size):
+            block2_end = min(block2_start + block_size, len(mols))
+            block2_coords = coords[block2_start:block2_end]
+            coords2 = block2_coords[np.newaxis, :, :, :]
+
+            squared_diff = np.sum((coords1 - coords2)**2, axis = -1)
+            mean_squared_diff = np.mean(squared_diff, axis = -1)
+            rmsd_matrix[block1_start:block1_end, block2_start:block2_end] = (
+                np.sqrt(mean_squared_diff)
+            )
+
+    return rmsd_matrix
