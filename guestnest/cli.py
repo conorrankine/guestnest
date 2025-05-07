@@ -148,13 +148,11 @@ def main():
 
         host_guest_complexes.append(host_guest_complex)
 
-    print('\nfiltering duplicated complexes via heirarchical clustering...')
-    n = len(host_guest_complexes)
+    print()
+
     host_guest_complexes = cluster.unique_mols(
         host_guest_complexes, rmsd_threshold = args.rmsd_threshold
     )
-    m = len(host_guest_complexes)
-    print(f'...finished! [{n} -> {m} complexes] \n')
 
     host_guest_complexes = sorted(
         host_guest_complexes, key = lambda mol: mol.GetDoubleProp('E(MMFF)')

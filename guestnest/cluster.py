@@ -58,6 +58,8 @@ def unique_mols(
     if len(mols) <= 1:
         return mols
     
+    print('deduplicating complexes via heirarchical clustering on RMSD:\n')
+    
     rmsd_matrix = get_rmsd_matrix(mols)
 
     cluster_assignments = fcluster(
@@ -73,6 +75,12 @@ def unique_mols(
     )
 
     unique_mols = [mols[idx] for idx in cluster_representatives]
+
+    print(
+        'heirarchical clustering on RMSD complete:\n' + 
+        f'- n. complexes (pre-deduplication): {len(mols)}\n' +
+        f'- n. complexes (post-deduplication): {len(unique_mols)}\n'
+    )
 
     return unique_mols
 

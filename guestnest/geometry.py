@@ -455,6 +455,8 @@ def get_rmsd_matrix(
         np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
     """
 
+    print('calculating the pairwise RMSD matrix:')
+
     n_mols = len(mols)
     n_atoms = mols[0].GetNumAtoms()
 
@@ -467,13 +469,13 @@ def get_rmsd_matrix(
     )
 
     print(f'- available mem: {(available_mem / (1024**3)):.2f} GB')
-    print(f'- required mem (estm.): {(estimated_mem / (1024**3)):.2f} GB')
+    print(f'- estimated mem: {(estimated_mem / (1024**3)):.2f} GB')
 
     if estimated_mem < available_mem:
-        print('- method: full vectorisation')
+        print('- calculation method: full vectorisation\n')
         return _get_rmsd_matrix_vectorised(mols)
     else:
-        print('- method: block vectorisation')
+        print('- calculation method: block vectorisation\n')
         block_size = _get_optimal_block_size(
             n_mols, n_atoms, available_mem
         )
