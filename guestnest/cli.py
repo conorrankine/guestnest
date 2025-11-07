@@ -23,6 +23,7 @@ import datetime
 import tqdm
 from . import optimise
 from . import cluster
+from . import deduplicate
 from numpy.random import default_rng
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
@@ -155,6 +156,8 @@ def main():
     host_guest_complexes = sorted(
         host_guest_complexes, key = lambda mol: mol.GetDoubleProp('E(XTB)')
     )
+
+    host_guest_complexes = deduplicate.by_energy(host_guest_complexes)
 
     print('-' * 24)
     print(
