@@ -5,7 +5,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "psutil>=7.0.0",
-    "rdkit>=2024.9.5",
+    "rdkit>=2025.03.5",
     "scipy>=1.15.2",
     "tqdm>=4.67.1",
 ]
