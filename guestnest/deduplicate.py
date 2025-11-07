@@ -20,7 +20,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
 from rdkit import Chem
-from rdkit.ML.Cluster import Butina
+from rdkit.ML import Cluster
 from .rmsd import get_rmsd, get_rmsd_matrix
 
 # =============================================================================
@@ -94,7 +94,7 @@ def by_rmsd(
     
     rmsd_matrix = get_rmsd_matrix(mols)
 
-    clusters = Butina.ClusterData(
+    clusters = Cluster.Butina.ClusterData(
         rmsd_matrix,
         len(mols),
         rmsd_threshold,
@@ -113,3 +113,7 @@ def by_rmsd(
     deduplicated_mols = [mols[i] for i in keep_mols_idx]
 
     return deduplicated_mols
+
+# =============================================================================
+#                                     EOF
+# =============================================================================
