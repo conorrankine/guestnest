@@ -149,7 +149,8 @@ def main():
         host_guest_complexes.append(host_guest_complex)
 
     host_guest_complexes = deduplicate.by_rmsd(
-        host_guest_complexes
+        host_guest_complexes,
+        rmsd_threshold = args.rmsd_threshold
     )
 
     host_guest_complexes = deduplicate.by_energy(
