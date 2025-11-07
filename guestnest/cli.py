@@ -137,37 +137,35 @@ def main():
             rng = rng
         )
 
-        host_guest_complex = optimise.optimise_geom_mmff(
+        host_guest_complex = optimise.optimise_geom_xtb(
             host_guest_complex,
             fixed_atoms = [i for i in range(host.GetNumAtoms())]
         )
 
         host_guest_complex.SetDoubleProp(
-            'E(MMFF)', optimise.eval_energy_mmff(host_guest_complex)
+            'E(XTB)', optimise.eval_energy_xtb(host_guest_complex)
         )
 
         host_guest_complexes.append(host_guest_complex)
-
-    print()
 
     host_guest_complexes = cluster.unique_mols(
         host_guest_complexes, rmsd_threshold = args.rmsd_threshold
     )
 
     host_guest_complexes = sorted(
-        host_guest_complexes, key = lambda mol: mol.GetDoubleProp('E(MMFF)')
+        host_guest_complexes, key = lambda mol: mol.GetDoubleProp('E(XTB)')
     )
 
     print('-' * 24)
     print(
         f'{"complex":<6}'
-        f'{"E(MMFF) / a.u.":>18}'
+        f'{"E(XTB) / a.u.":>18}'
     )
     print('-' * 24)
     for i, host_guest_complex in enumerate(host_guest_complexes, start = 1):
         print(
             f'{i:06d}'
-            f'{host_guest_complex.GetDoubleProp("E(MMFF)"):>18.6f}'
+            f'{host_guest_complex.GetDoubleProp("E(XTB)"):>18.6f}'
         )
     print('-' * 24 + '\n')
 
