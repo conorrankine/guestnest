@@ -20,7 +20,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
 from rdkit import Chem
-from rdkit.ML import Cluster
+from rdkit.ML.Cluster import Butina
 from .rmsd import get_rmsd, get_rmsd_matrix
 
 # =============================================================================
@@ -94,7 +94,7 @@ def by_rmsd(
     
     rmsd_matrix = get_rmsd_matrix(mols)
 
-    clusters = Cluster.Butina.ClusterData(
+    clusters = Butina.ClusterData(
         rmsd_matrix,
         len(mols),
         rmsd_threshold,
