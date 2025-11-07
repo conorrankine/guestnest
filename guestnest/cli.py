@@ -77,7 +77,12 @@ def parse_args() -> Namespace:
     p.add_argument(
         '-t', '--rmsd_threshold',
         type = float, default = 0.1,
-        help = 'RMSD threshold for pruning duplicated host-guest geometries'
+        help = 'RMSD threshold (Angstroem) RMSD-based duplication'
+    )
+    p.add_argument(
+        '-e', '--energy_threshold',
+        type = float, default = 5E-3,
+        help = 'energy threshold (kcal/mol) for energy-based deduplication'
     )
     p.add_argument(
         '-i', '--maxiter',
@@ -154,7 +159,8 @@ def main():
     )
 
     host_guest_complexes = deduplicate.by_energy(
-        host_guest_complexes
+        host_guest_complexes,
+        energy_threshold = args.energy_threshold
     )
 
     print('-' * 24)
