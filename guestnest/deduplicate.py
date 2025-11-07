@@ -20,6 +20,8 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
 from rdkit import Chem
+from rdkit.ML.Cluster import Butina
+from .rmsd import get_rmsd, get_rmsd_matrix
 
 # =============================================================================
 #                                  FUNCTIONS
@@ -66,4 +68,48 @@ def by_energy(
         deduplicated_mols.append(mol)
         last_energy = energy
     
+    return deduplicated_mols
+
+def by_rmsd(
+    mols: list[Chem.Mol],
+    rmsd_threshold: float = 0.5,
+    energy_property: str = 'E(XTB)'
+) -> list[Chem.Mol]:
+    """
+    Deduplicates a list of molecules by RMSD threshold; where two (or more)
+    molecules are grouped into the same cluster by Butina clustering on intra-
+    cluster RMSD, the higher-energy molecule(s) is(/are) dropped.
+
+    Args:
+        mols (list[Chem.Mol]): List of molecules.
+        rmsd_threshold (float, optional): Maximum intra-cluster RMSD for the
+            Butina clustering algorithm in Angstroem. Defaults to 0.5.
+        energy_property (str, optional): RDKit double property key containing
+            the energy value. Defaults to 'E(XTB)'.
+
+    Returns:
+        list[Chem.Mol]: List of molecules deduplicated by Butina clustering on
+            intra-cluster RMSD.
+    """
+    
+    rmsd_matrix = get_rmsd_matrix(mols)
+
+    clusters = Butina.ClusterData(
+        rmsd_matrix,
+        len(mols),
+        rmsd_threshold,
+        isDistData = True
+    )
+
+    keep_mols_idx: list[int] = []
+    for cluster in clusters:
+        keep_mols_idx.append(
+            min(
+                cluster,
+                key = lambda i: mols[i].GetDoubleProp(energy_property)
+            )
+        )
+
+    deduplicated_mols = [mols[i] for i in keep_mols_idx]
+
     return deduplicated_mols
