@@ -21,13 +21,9 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem.rdForceFieldHelpers import (
-    MMFFGetMoleculeForceField,
-    MMFFGetMoleculeProperties
-)
 from scipy.optimize import minimize
 from scipy.optimize._optimize import OptimizeResult
+from .xtb_wrapper import XTBCalculator
 from .geometry import (
     centre,
     get_coords,
@@ -175,29 +171,25 @@ def _get_cavity_penalty(
 
     return np.sum(np.square(cavity_boundary_violations))    
 
-def optimise_geom_mmff(
+def optimise_geom_xtb(
     mol: Chem.Mol,
     fixed_atoms: list[int] = None
 ) -> Chem.Mol:
 
-    ff = MMFFGetMoleculeForceField(
-        mol, MMFFGetMoleculeProperties(mol)
-    )
+    calculator = XTBCalculator(mol)
 
     if fixed_atoms is not None:
         for fixed_atom in fixed_atoms:
-            ff.MMFFAddPositionConstraint(fixed_atom, 0.0, 1.0E5)
+            calculator.AddFixedPoint(fixed_atom)
             
-    ff.Minimize()
+    calculator.Minimize()
 
     return mol
 
-def eval_energy_mmff(
+def eval_energy_xtb(
     mol: Chem.Mol
 ) -> float:
     
-    ff = MMFFGetMoleculeForceField(
-        mol, MMFFGetMoleculeProperties(mol)
-    )
+    calculator = XTBCalculator(mol)
 
-    return ff.CalcEnergy()
+    return calculator.CalcEnergy()
