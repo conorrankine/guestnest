@@ -29,7 +29,7 @@ from .rmsd import get_rmsd, get_rmsd_matrix
 
 def by_energy(
     mols: list[Chem.Mol],
-    energy_threshold: float = 1E-3,
+    energy_threshold: float = 5E-3,
     energy_property: str = 'E(XTB)'
 ) -> list[Chem.Mol]:
     """
@@ -42,9 +42,9 @@ def by_energy(
 
     Args:
         mols (list[Chem.Mol]): List of molecules.
-        energy_threshold (float, optional): Minimum absolute ΔE threshold;
-            where two molecules have a ΔE below this value, the higher-energy
-            molecule of the two is dropped. Defaults to 1E-3.
+        energy_threshold (float, optional): Minimum absolute ΔE threshold in
+            kcal/mol; where two molecules have a ΔE below this value, the
+            higher-energy molecule of the two is dropped. Defaults to 5E-3.
         energy_property (str, optional): RDKit double property key containing
             the energy value. Defaults to 'E(XTB)'.
 
