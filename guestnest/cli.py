@@ -22,7 +22,6 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 import datetime
 import tqdm
 from . import optimise
-from . import cluster
 from . import deduplicate
 from numpy.random import default_rng
 from argparse import ArgumentParser, Namespace
@@ -149,15 +148,13 @@ def main():
 
         host_guest_complexes.append(host_guest_complex)
 
-    host_guest_complexes = cluster.unique_mols(
-        host_guest_complexes, rmsd_threshold = args.rmsd_threshold
+    host_guest_complexes = deduplicate.by_rmsd(
+        host_guest_complexes
     )
 
-    host_guest_complexes = sorted(
-        host_guest_complexes, key = lambda mol: mol.GetDoubleProp('E(XTB)')
+    host_guest_complexes = deduplicate.by_energy(
+        host_guest_complexes
     )
-
-    host_guest_complexes = deduplicate.by_energy(host_guest_complexes)
 
     print('-' * 24)
     print(
