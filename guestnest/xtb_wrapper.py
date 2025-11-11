@@ -63,9 +63,9 @@ class XTBCalculator:
     """
 
     XTB_METHODS = {
-        'GFN0-xTB': '0',
-        'GFN1-xTB': '1',
-        'GFN2-xTB': '2'
+        'gfn0-xtb': '0',
+        'gfn1-xtb': '1',
+        'gfn2-xtb': '2'
     }
 
     ENGINES = {
@@ -78,8 +78,8 @@ class XTBCalculator:
         self,
         mol: Chem.Mol,
         conf_id: int = -1,
-        method: str = 'GFN2-xTB',
-        engine: str = 'ANCOPT',
+        method: str = 'gfn2-xtb',
+        engine: str = 'ancopt',
         xtb_path: str = 'xtb',
         n_proc: int = 1
     ):
@@ -90,9 +90,9 @@ class XTBCalculator:
             mol (Chem.Mol): Molecule.
             conf_id (int, optional): Conformer ID to initialise the
                 `XTBCalculator` instance for. Defaults to -1.
-            method (str, optional): XTB method. Defaults to 'GFN2-xTB'.
+            method (str, optional): XTB method. Defaults to 'gfn2-xtb'.
             engine (str, optional): XTB optimisation engine. Defaults to 
-                'ANCOPT'.
+                'ancopt'.
             xtb_path (str, optional): Path to the XTB executable. Defaults to
                 'xtb'.
             n_proc (int, optional): Number of parallel processes; if 1, XTB
@@ -113,21 +113,21 @@ class XTBCalculator:
             atom.GetNumRadicalElectrons() for atom in mol.GetAtoms()
         )
 
-        if method not in self.XTB_METHODS:
+        if method.lower() not in self.XTB_METHODS:
             raise ValueError(
                 f'{method} is not a supported XTB method: supported XTB '
                 f'methods include {{{", ".join(self.XTB_METHODS)}}}'
             )
         else:
-            self.method = method
+            self.method = self.XTB_METHODS[method.lower()]
 
-        if engine not in self.ENGINES:
+        if engine.lower() not in self.ENGINES:
             raise ValueError(
                 f'{engine} is not a supported optimisation engine: supported '
                 f'optimisation engines include {{{", ".join(self.ENGINES)}}}'          
             )
         else:
-            self.engine = engine
+            self.engine = self.ENGINES[engine.lower()]
 
         self.fixed_atoms = set()
 
@@ -268,7 +268,7 @@ class XTBCalculator:
                 self._write_xtb_xcontrol_file(f'{tmpdir}/xtb.inp')
                 cmd.extend(['--input', f'{tmpdir}/xtb.inp'])
 
-            cmd.extend(['--gfn', self.XTB_METHODS[self.method]])
+            cmd.extend(['--gfn', self.method])
 
             if self.charge != 0:
                 cmd.extend(['--chrg', str(self.charge)])
@@ -320,8 +320,7 @@ class XTBCalculator:
         
         with open(xtb_xcontrol_file, 'w') as f:
 
-            engine = self.ENGINES[self.engine]
-            f.write(f'$opt\n engine={engine}\n$end\n\n')
+            f.write(f'$opt\n engine={self.engine}\n$end\n\n')
             
             if self.fixed_atoms:
                 fixed_atoms = [
