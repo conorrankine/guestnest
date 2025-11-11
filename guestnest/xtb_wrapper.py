@@ -68,11 +68,18 @@ class XTBCalculator:
         'GFN2-xTB': '2'
     }
 
+    ENGINES = {
+        'ancopt': 'rf',
+        'lbfgs': 'lbfgs',
+        'fire': 'inertial'
+    }
+
     def __init__(
         self,
         mol: Chem.Mol,
         conf_id: int = -1,
         method: str = 'GFN2-xTB',
+        engine: str = 'ANCOPT',
         xtb_path: str = 'xtb',
         n_proc: int = 1
     ):
@@ -84,6 +91,8 @@ class XTBCalculator:
             conf_id (int, optional): Conformer ID to initialise the
                 `XTBCalculator` instance for. Defaults to -1.
             method (str, optional): XTB method. Defaults to 'GFN2-xTB'.
+            engine (str, optional): XTB optimisation engine. Defaults to 
+                'ANCOPT'.
             xtb_path (str, optional): Path to the XTB executable. Defaults to
                 'xtb'.
             n_proc (int, optional): Number of parallel processes; if 1, XTB
@@ -111,6 +120,14 @@ class XTBCalculator:
             )
         else:
             self.method = method
+
+        if engine not in self.ENGINES:
+            raise ValueError(
+                f'{engine} is not a supported optimisation engine: supported '
+                f'optimisation engines include {{{", ".join(self.ENGINES)}}}'          
+            )
+        else:
+            self.engine = engine
 
         self.fixed_atoms = set()
 
@@ -248,9 +265,8 @@ class XTBCalculator:
             if minimize:
                 cmd.extend(['--opt'])
                 cmd.extend(['--cycles', str(max_iter)])
-                if self.fixed_atoms:
-                    self._write_xtb_xcontrol_file(f'{tmpdir}/xtb.inp')
-                    cmd.extend(['--input', f'{tmpdir}/xtb.inp'])
+                self._write_xtb_xcontrol_file(f'{tmpdir}/xtb.inp')
+                cmd.extend(['--input', f'{tmpdir}/xtb.inp'])
 
             cmd.extend(['--gfn', self.XTB_METHODS[self.method]])
 
@@ -303,10 +319,17 @@ class XTBCalculator:
         """
         
         with open(xtb_xcontrol_file, 'w') as f:
-            f.write('$fix\n')
-            fixed_atoms = [str(atom_idx + 1) for atom_idx in self.fixed_atoms]
-            f.write(' atoms: ' + ','.join(fixed_atoms) + '\n')
-            f.write('$end\n')
+
+            engine = self.ENGINES[self.engine]
+            f.write(f'$opt\n engine={engine}\n$end\n\n')
+            
+            if self.fixed_atoms:
+                fixed_atoms = [
+                    str(atom_idx + 1) for atom_idx in self.fixed_atoms
+                ]
+                f.write('$fix\n')
+                f.write(' atoms: ' + ','.join(fixed_atoms) + '\n')
+                f.write('$end\n')
 
 # =============================================================================
 #                                  FUNCTIONS
