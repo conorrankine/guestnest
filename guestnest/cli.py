@@ -155,7 +155,8 @@ def main():
 
     host_guest_complexes = deduplicate.by_rmsd(
         host_guest_complexes,
-        rmsd_threshold = args.rmsd_threshold
+        rmsd_threshold = args.rmsd_threshold,
+        heavy_atoms_only = True
     )
 
     host_guest_complexes = deduplicate.by_energy(
