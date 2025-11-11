@@ -30,7 +30,8 @@ from .geometry import get_coords, set_coords
 
 def get_rmsd(
     mol1: Chem.Mol,
-    mol2: Chem.Mol
+    mol2: Chem.Mol,
+    heavy_atoms_only: bool = False
 ) -> float:
     """
     Returns the root-mean-squared difference (RMSD) of the atomic positions in
@@ -40,11 +41,17 @@ def get_rmsd(
     Args:
         mol1 (Chem.Mol): Molecule #1.
         mol2 (Chem.Mol): Molecule #2.
+        heavy_atoms_only (bool, optional): Calculate the RMSD of the atomic
+            positions for the heavy atoms only, i.e., ignore hydrogen atoms.
+            Defaults to `False`.
 
     Returns:
         float: RMSD of the atomic positions between `mol1` and `mol2`.
     """
     
+    if heavy_atoms_only:
+        mol1, mol2 = Chem.RemoveHs(mol1), Chem.RemoveHs(mol2)
+
     squared_diff = np.sum(
         (get_coords(mol1) - get_coords(mol2))**2, axis = 1
     )
@@ -57,6 +64,7 @@ def get_rmsd(
 
 def get_rmsd_matrix(
     mols: list[Chem.Mol],
+    heavy_atoms_only: bool = False,
     mem_safety_fraction: float = 0.8
 ) -> np.ndarray:
     """
@@ -67,6 +75,9 @@ def get_rmsd_matrix(
 
     Args:
         mols (list[Chem.Mol]): List of molecules.
+        heavy_atoms_only (bool, optional): Calculate the RMSD of the atomic
+            positions for the heavy atoms only, i.e., ignore hydrogen atoms.
+            Defaults to `False`.
         mem_safety_fraction (float, optional): Fraction of the available
             memory ring-fenced as 'safe for use'. Defaults to 0.8.
 
@@ -75,6 +86,9 @@ def get_rmsd_matrix(
     """
 
     print('calculating the pairwise RMSD matrix:')
+
+    if heavy_atoms_only:
+        mols = [Chem.RemoveHs(mol) for mol in mols]
 
     n_mols = len(mols)
     n_atoms = mols[0].GetNumAtoms()
