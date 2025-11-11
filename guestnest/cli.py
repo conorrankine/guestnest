@@ -167,7 +167,7 @@ def main():
     print('-' * 24)
     print(
         f'{"complex":<6}'
-        f'{"E(XTB) / a.u.":>18}'
+        f'{"E(XTB) (kcal/mol)":>18}'
     )
     print('-' * 24)
     for i, host_guest_complex in enumerate(host_guest_complexes, start = 1):
