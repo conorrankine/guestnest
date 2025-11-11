@@ -73,6 +73,7 @@ def by_energy(
 def by_rmsd(
     mols: list[Chem.Mol],
     rmsd_threshold: float = 0.5,
+    heavy_atoms_only: bool = False,
     energy_property: str = 'E(XTB)'
 ) -> list[Chem.Mol]:
     """
@@ -84,6 +85,8 @@ def by_rmsd(
         mols (list[Chem.Mol]): List of molecules.
         rmsd_threshold (float, optional): Maximum intra-cluster RMSD for the
             Butina clustering algorithm in Angstroem. Defaults to 0.5.
+        heavy_atoms_only (bool, optional): Cluster on heavy atoms only; ignores
+            hydrogen atoms when calculating RMSDs. Defaults to `False`.
         energy_property (str, optional): RDKit double property key containing
             the energy value. Defaults to 'E(XTB)'.
 
@@ -92,7 +95,10 @@ def by_rmsd(
             intra-cluster RMSD.
     """
     
-    rmsd_matrix = get_rmsd_matrix(mols)
+    rmsd_matrix = get_rmsd_matrix(
+        mols,
+        heavy_atoms_only = heavy_atoms_only
+    )
 
     clusters = Butina.ClusterData(
         rmsd_matrix,
