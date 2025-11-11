@@ -176,7 +176,10 @@ def optimise_geom_xtb(
     fixed_atoms: list[int] = None
 ) -> Chem.Mol:
 
-    calculator = XTBCalculator(mol)
+    calculator = XTBCalculator(
+        mol,
+        engine = 'ancopt' if not fixed_atoms else 'lbfgs'
+    )
 
     if fixed_atoms is not None:
         for fixed_atom in fixed_atoms:
