@@ -129,8 +129,9 @@ def _penalty_function(
     host_coords: np.ndarray,
     guest_coords: np.ndarray,
     host_cavity_dims: np.ndarray,
-    vdw_distance_matrix: np.ndarray
-) -> float:
+    vdw_distance_matrix: np.ndarray,
+    return_components: bool = False
+) -> float | tuple[float]:
     
     overlap_penalty = _get_overlap_penalty(
         host_coords, guest_coords, vdw_distance_matrix
@@ -140,7 +141,11 @@ def _penalty_function(
         guest_coords, host_cavity_dims
     )
 
-    return overlap_penalty + cavity_penalty
+    penalty = overlap_penalty + cavity_penalty
+    if return_components:
+        return penalty, overlap_penalty, cavity_penalty
+    else:
+        return penalty
 
 def _get_overlap_penalty(
     host_coords: np.ndarray,
