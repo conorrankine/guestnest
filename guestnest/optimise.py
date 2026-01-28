@@ -218,67 +218,6 @@ def _sample_rotation(
 
     return rotation
 
-def random_fit(
-    host: Chem.Mol,
-    guest: Chem.Mol,
-    maxiter: int = 100,
-    host_cavity_dims: list = [4.0, 4.0, 4.0],
-    vdw_scaling: float = 1.0,
-    rng: np.random.Generator = None
-) -> tuple[Chem.Mol, OptimizeResult]:
-    
-    if rng is None:
-        rng = np.random.default_rng()
-
-    host_cavity_dims = np.array(host_cavity_dims)
-
-    host_ = centre(host)
-    guest_ = centre(guest)
-    
-    bounds = np.array([
-        [0.0, 1.0],             # radial distance
-        [0.0, np.pi],           # zenith angle
-        [0.0, 2.0 * np.pi],     # azimuthal angle
-        [0.0, np.pi],           # rotation angle (x)
-        [0.0, np.pi],           # rotation angle (y)
-        [0.0, np.pi]            # rotation angle (z)
-    ])
-
-    x0 = rng.uniform(bounds[:,0], bounds[:,1])
-
-    vdw_distance_matrix = get_vdw_distance_matrix(
-        host, guest, vdw_scaling = vdw_scaling
-    )
-
-    opt = minimize(
-        _objective_function,
-        x0 = x0,
-        args = (
-            get_coords(host_),
-            get_coords(guest_),
-            host_cavity_dims,
-            vdw_distance_matrix
-        ),
-        options = {
-            'maxiter': maxiter,
-            'disp': False
-        }
-    )
-
-    opt_spherical_coords, opt_rotation_angles = np.split(opt.x, 2)
-
-    opt_cartesian_coords = (
-        spherical_to_cartesian(*opt_spherical_coords) * host_cavity_dims
-    )
-
-    fitted_guest_ = rotate_and_translate_mol(
-        guest_, opt_rotation_angles, opt_cartesian_coords
-    )
-
-    host_guest_complex = Chem.CombineMols(host_, fitted_guest_)
-    
-    return host_guest_complex, opt
-
 def _objective_function(
     x,
     host_coords: np.ndarray,
