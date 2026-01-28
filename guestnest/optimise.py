@@ -82,16 +82,8 @@ def generate_initial_poses(
     sampler = qmc.Sobol(d = 6, scramble = True, rng = rng)
 
     for sample in sampler.random(n_samples):
-
-        phi_min, phi_max = phi_range
-        theta_min, theta_max = theta_range
-        cos_theta_min, cos_theta_max = np.cos(theta_min), np.cos(theta_max)
-        u1, u2, u3 = sample[:3]
-        phi = phi_min + (phi_max - phi_min) * u1
-        theta = np.arccos(cos_theta_min + (cos_theta_max - cos_theta_min) * u2)
-        r = u3 ** (1.0 / 3.0)
-        translations = (
-            spherical_to_cartesian(r, theta, phi) * host_cavity_dims
+        positions = _sample_position(
+            sample[:3], theta_range, phi_range, host_cavity_dims
         )
 
         u1, u2, u3 = sample[3:]
@@ -104,9 +96,47 @@ def generate_initial_poses(
         quats /= np.linalg.norm(quats)
         rotations = R.from_quat(quats).as_rotvec()
 
-        x0 = np.hstack((translations, rotations))
+        x0 = np.hstack((positions, rotations))
 
         yield x0
+
+def _sample_position(
+    sample: np.ndarray,
+    theta_range: tuple[float, float],
+    phi_range: tuple[float, float],
+    host_cavity_dims: np.ndarray
+) -> np.ndarray:
+    """
+    Returns a 3-element array of Cartesian coordinates ([x, y, z]) inside a
+    symmetric ellipsoidal cavity derived from a 3-element array of Sobol
+    components ([u1, u2, u3]).
+
+    Args:
+        sample (np.ndarray): 3-element array of Sobol components ([u1, u2, u3])
+            used to sample the radial and angular coordinates.
+        theta_range (tuple[float, float]): Zenith (θ) angle limits (radians;
+            0 = +Z).
+        phi_range (tuple[float, float]): Azimuthal (φ) angle limits (radians).
+        host_cavity_dims (np.ndarray): 3-element array of per-axis scale
+            factors (semi-axes) for the ellipsoidal cavity in x, y, and z.
+
+    Returns:
+        np.ndarray: 3-element array of Cartesian coordinates ([x, y, z]).
+    """
+
+    theta_min, theta_max = theta_range
+    phi_min, phi_max = phi_range
+    
+    u1, u2, u3 = sample
+    r = u1 ** (1.0 / 3.0)
+    theta = np.arccos(
+        np.cos(theta_min) + (np.cos(theta_max) - np.cos(theta_min)) * u2
+    )
+    phi = phi_min + (phi_max - phi_min) * u3
+
+    positions = spherical_to_cartesian(r, theta, phi) * host_cavity_dims
+
+    return positions
 
 def random_fit(
     host: Chem.Mol,
