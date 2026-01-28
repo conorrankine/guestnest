@@ -43,26 +43,25 @@ from .geometry import (
 # =============================================================================
 
 def generate_initial_poses(
-    n_samples,
+    n_samples: int = 1,
     host_cavity_dims: np.ndarray | None = None,
     theta_range: tuple[float, float] = (0.0, np.pi),
     phi_range: tuple[float, float] = (0.0, 2.0 * np.pi),
     rng: np.random.Generator = None
 ) -> Generator[np.ndarray, None, None]:
     """
-    Yields quasi-random initial poses inside a symmetric ellipsoidal cavity as
-    6-element arrays ([x, y, z, rx, ry, rz]).
-
+    Yields quasi-random poses inside a symmetric ellipsoidal cavity.
+    
     Uses a Sobol sequence sampler for low-discrepancy sampling of:
-    - positions ([x, y, z]) within the symmetric ellipsoidal cavity, optionally
-      constrained by zenith (θ) and azimuthal (φ) angular ranges;
+    - Cartesian positions ([x, y, z]) within the symmetric ellipsoidal cavity,
+      optionally constrained by zenith (θ) and azimuthal (φ) angular ranges;
     - rotations ([rx, ry, rz]) derived from quaternions.
 
     Args:
         n_samples (int): Number of initial poses to generate.
         host_cavity_dims (np.ndarray | None, optional): 3-element array of
-            per-axis scale factors (semi-axes) for the ellipsoidal cavity in x,
-            y, and z. Defaults to the unit cube ([1.0, 1.0, 1.0]).
+            per-axis scale factors (semi-axes) for the symmetric ellipsoidal
+            cavity. Defaults to the unit cube ([1.0, 1.0, 1.0]).
         theta_range (tuple[float, float], optional): Zenith (θ) angle limits
             (radians; 0 = +Z). Defaults to (0.0, π).
         phi_range (tuple[float, float], optional): Azimuthal (φ) angle limits
@@ -72,8 +71,9 @@ def generate_initial_poses(
             number generator is used.
 
     Yields:
-        np.ndarray: 6-element array ([x, y, z, rx, ry, rz]) comprising position
-            ([x, y, z]) and rotation ([rx, ry, rz]) vector components.
+        np.ndarray: 6-element array ([x, y, z, rx, ry, rz]) comprising the
+            Cartesian position vector ([x, y, z]) and rotation vector
+            ([rx, ry, rz]) that define the quasi-random pose.
     """
     
     if host_cavity_dims is None:
@@ -97,21 +97,20 @@ def _sample_position(
     host_cavity_dims: np.ndarray
 ) -> np.ndarray:
     """
-    Returns a 3-element array of Cartesian coordinates ([x, y, z]) inside a
-    symmetric ellipsoidal cavity derived from a 3-element array of Sobol
-    components ([u1, u2, u3]).
+    Returns a Cartesian position vector ([x, y, z]) derived from a 3-element
+    array of Sobol components ([u1, u2, u3]).
 
     Args:
         sample (np.ndarray): 3-element array of Sobol components ([u1, u2, u3])
-            used to sample the radial and angular coordinates.
+            used to sample a Cartesian position.
         theta_range (tuple[float, float]): Zenith (θ) angle limits (radians;
             0 = +Z).
         phi_range (tuple[float, float]): Azimuthal (φ) angle limits (radians).
         host_cavity_dims (np.ndarray): 3-element array of per-axis scale
-            factors (semi-axes) for the ellipsoidal cavity in x, y, and z.
+            factors (semi-axes) for the symmetric ellipsoidal cavity.
 
     Returns:
-        np.ndarray: 3-element array of Cartesian coordinates ([x, y, z]).
+        np.ndarray: Cartesian position vector ([x, y, z]).
     """
 
     theta_min, theta_max = theta_range
@@ -123,10 +122,9 @@ def _sample_position(
         np.cos(theta_min) + (np.cos(theta_max) - np.cos(theta_min)) * u2
     )
     phi = phi_min + (phi_max - phi_min) * u3
+    position = spherical_to_cartesian(r, theta, phi) * host_cavity_dims
 
-    positions = spherical_to_cartesian(r, theta, phi) * host_cavity_dims
-
-    return positions
+    return position
 
 def _sample_rotation(
     sample: np.ndarray
@@ -137,7 +135,7 @@ def _sample_rotation(
 
     Args:
         sample (np.ndarray): 3-element array of Sobol components ([u1, u2, u3])
-            used to sample a random rotation.
+            used to sample a rotation.
 
     Returns:
         np.ndarray: Rotation vector ([rx, ry, rz]).
@@ -151,9 +149,9 @@ def _sample_rotation(
         np.sqrt(u1) * np.cos(2 * np.pi * u3),
     ])
     quat /= np.linalg.norm(quat)
-    rotations = R.from_quat(quat).as_rotvec()
+    rotation = R.from_quat(quat).as_rotvec()
 
-    return rotations
+    return rotation
 
 def random_fit(
     host: Chem.Mol,
