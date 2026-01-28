@@ -90,6 +90,71 @@ def generate_initial_poses(
         )
         yield np.hstack((positions, rotations))
 
+def fit(
+    host: Chem.Mol,
+    guest: Chem.Mol,
+    x0: np.ndarray,
+    host_cavity_dims: np.ndarray,
+    vdw_scaling: float = 1.0,
+    maxiter: int = 100
+) -> tuple[Chem.Mol, OptimizeResult]:
+    """
+    Optimises a guest molecule pose inside a host molecule by minimising a two-
+    part penalty function.
+
+    Args:
+        host (Chem.Mol): Host molecule.
+        guest (Chem.Mol): Guest molecule.
+        x0 (np.ndarray): 6-element array ([x, y, z, rx, ry, rz]) comprising the
+            Cartesian position vector ([x, y, z]) and rotation vector
+            ([rx, ry, rz]) that define the (initial) guest molecule pose.
+        host_cavity_dims (np.ndarray): 3-element array of per-axis scale
+            factors (semi-axes) for the symmetric ellipsoidal cavity.
+        vdw_scaling (float, optional): Scaling factor applied to vdW radii when
+            computing the vdW overlap penalty. Defaults to 1.0.
+        maxiter (int, optional): Maximum number of optimisation iterations.
+            Defaults to 100.
+
+    Returns:
+        tuple[Chem.Mol, OptimizeResult]: Combined host-guest complex assembly
+            and SciPy optimisation result instance.
+    """
+
+    host_centred = centre(host)
+    guest_centred = centre(guest)
+
+    vdw_distance_matrix = get_vdw_distance_matrix(
+        host, guest, vdw_scaling = vdw_scaling
+    )
+
+    opt = minimize(
+        _objective_function,
+        x0 = x0,
+        args = (
+            get_coords(host_centred),
+            get_coords(guest_centred),
+            np.array(host_cavity_dims),
+            vdw_distance_matrix
+        ),
+        options = {
+            'maxiter': maxiter,
+            'disp': False
+        }
+    )
+
+    position_vector, rotation_vector = np.split(opt.x, 2)
+    rotation_matrix = R.from_rotvec(rotation_vector).as_matrix()
+
+    guest_coords = get_coords(guest_centred)
+    guest_coords_transformed = (
+        (rotation_matrix @ guest_coords.T).T + position_vector
+    )
+    set_coords(guest_centred, guest_coords_transformed)
+
+    host_guest_complex = Chem.CombineMols(host_centred, guest_centred)
+    
+    return host_guest_complex, opt
+
 def _sample_position(
     sample: np.ndarray,
     theta_range: tuple[float, float],
@@ -222,19 +287,16 @@ def _objective_function(
     vdw_distance_matrix: np.ndarray
 ) -> float:
 
-    spherical_coords, rotation_angles = np.split(x, 2)
+    position_vector, rotation_vector = np.split(x, 2)
+    rotation_matrix = R.from_rotvec(rotation_vector).as_matrix()
 
-    cartesian_coords = (
-        spherical_to_cartesian(*spherical_coords) * host_cavity_dims
-    )
-
-    transformed_guest_coords = rotate_and_translate_coords(
-        guest_coords, rotation_angles, cartesian_coords
+    guest_coords_transformed = (
+        (rotation_matrix @ guest_coords.T).T + position_vector
     )
 
     return _penalty_function(
         host_coords,
-        transformed_guest_coords,
+        guest_coords_transformed,
         host_cavity_dims,
         vdw_distance_matrix
     )
