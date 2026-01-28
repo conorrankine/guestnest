@@ -21,8 +21,11 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 from rdkit import Chem
+from scipy.stats import qmc
 from scipy.optimize import minimize
+from scipy.spatial.transform import Rotation as R
 from scipy.optimize._optimize import OptimizeResult
+from typing import Generator
 from .xtb_wrapper import XTBCalculator
 from .geometry import (
     centre,
@@ -38,6 +41,72 @@ from .geometry import (
 # =============================================================================
 #                                  FUNCTIONS
 # =============================================================================
+
+def generate_initial_poses(
+    n_samples,
+    host_cavity_dims: np.ndarray | None = None,
+    theta_range: tuple[float, float] = (0.0, np.pi),
+    phi_range: tuple[float, float] = (0.0, 2.0 * np.pi),
+    rng: np.random.Generator = None
+) -> Generator[np.ndarray, None, None]:
+    """
+    Yields quasi-random initial poses inside a symmetric ellipsoidal cavity as
+    6-element arrays ([x, y, z, rx, ry, rz]).
+
+    Uses a Sobol sequence sampler for low-discrepancy sampling of:
+    - positions ([x, y, z]) within the symmetric ellipsoidal cavity, optionally
+      constrained by zenith (θ) and azimuthal (φ) angular ranges;
+    - rotations ([rx, ry, rz]) derived from quaternions.
+
+    Args:
+        n_samples (int): Number of initial poses to generate.
+        host_cavity_dims (np.ndarray | None, optional): 3-element array of
+            per-axis scale factors (semi-axes) for the ellipsoidal cavity in x,
+            y, and z. Defaults to the unit cube ([1.0, 1.0, 1.0]).
+        theta_range (tuple[float, float], optional): Zenith (θ) angle limits
+            (radians; 0 = +Z). Defaults to (0.0, π).
+        phi_range (tuple[float, float], optional): Azimuthal (φ) angle limits
+            (radians). Defaults to (0.0, 2π).
+        rng (np.random.Generator, optional): Random number generator used to
+            initialise the Sobol sequence sampler. If None, a default random
+            number generator is used.
+
+    Yields:
+        np.ndarray: 6-element array ([x, y, z, rx, ry, rz]) comprising position
+            ([x, y, z]) and rotation ([rx, ry, rz]) vector components.
+    """
+    
+    if host_cavity_dims is None:
+        host_cavity_dims = np.array([1.0, 1.0, 1.0])
+
+    sampler = qmc.Sobol(d = 6, scramble = True, rng = rng)
+
+    for sample in sampler.random(n_samples):
+
+        phi_min, phi_max = phi_range
+        theta_min, theta_max = theta_range
+        cos_theta_min, cos_theta_max = np.cos(theta_min), np.cos(theta_max)
+        u1, u2, u3 = sample[:3]
+        phi = phi_min + (phi_max - phi_min) * u1
+        theta = np.arccos(cos_theta_min + (cos_theta_max - cos_theta_min) * u2)
+        r = u3 ** (1.0 / 3.0)
+        translations = (
+            spherical_to_cartesian(r, theta, phi) * host_cavity_dims
+        )
+
+        u1, u2, u3 = sample[3:]
+        quats = np.array([
+            np.sqrt(1 - u1) * np.sin(2 * np.pi * u2),
+            np.sqrt(1 - u1) * np.cos(2 * np.pi * u2),
+            np.sqrt(u1) * np.sin(2 * np.pi * u3),
+            np.sqrt(u1) * np.cos(2 * np.pi * u3),
+        ])
+        quats /= np.linalg.norm(quats)
+        rotations = R.from_quat(quats).as_rotvec()
+
+        x0 = np.hstack((translations, rotations))
+
+        yield x0
 
 def random_fit(
     host: Chem.Mol,
