@@ -85,20 +85,10 @@ def generate_initial_poses(
         positions = _sample_position(
             sample[:3], theta_range, phi_range, host_cavity_dims
         )
-
-        u1, u2, u3 = sample[3:]
-        quats = np.array([
-            np.sqrt(1 - u1) * np.sin(2 * np.pi * u2),
-            np.sqrt(1 - u1) * np.cos(2 * np.pi * u2),
-            np.sqrt(u1) * np.sin(2 * np.pi * u3),
-            np.sqrt(u1) * np.cos(2 * np.pi * u3),
-        ])
-        quats /= np.linalg.norm(quats)
-        rotations = R.from_quat(quats).as_rotvec()
-
-        x0 = np.hstack((positions, rotations))
-
-        yield x0
+        rotations = _sample_rotation(
+            sample[3:]
+        )
+        yield np.hstack((positions, rotations))
 
 def _sample_position(
     sample: np.ndarray,
@@ -137,6 +127,33 @@ def _sample_position(
     positions = spherical_to_cartesian(r, theta, phi) * host_cavity_dims
 
     return positions
+
+def _sample_rotation(
+    sample: np.ndarray
+) -> np.ndarray:
+    """
+    Returns a rotation vector ([rx, ry, rz]) derived from a 3-element array of
+    Sobol components ([u1, u2, u3]).
+
+    Args:
+        sample (np.ndarray): 3-element array of Sobol components ([u1, u2, u3])
+            used to sample a random rotation.
+
+    Returns:
+        np.ndarray: Rotation vector ([rx, ry, rz]).
+    """
+    
+    u1, u2, u3 = sample
+    quat = np.array([
+        np.sqrt(1 - u1) * np.sin(2 * np.pi * u2),
+        np.sqrt(1 - u1) * np.cos(2 * np.pi * u2),
+        np.sqrt(u1) * np.sin(2 * np.pi * u3),
+        np.sqrt(u1) * np.cos(2 * np.pi * u3),
+    ])
+    quat /= np.linalg.norm(quat)
+    rotations = R.from_quat(quat).as_rotvec()
+
+    return rotations
 
 def random_fit(
     host: Chem.Mol,
