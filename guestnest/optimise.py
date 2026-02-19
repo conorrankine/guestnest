@@ -31,8 +31,6 @@ from .geometry import (
     centre,
     get_coords,
     set_coords,
-    rotate_and_translate_coords,
-    rotate_and_translate_mol,
     spherical_to_cartesian,
     cartesian_to_spherical,
     get_vdw_distance_matrix
