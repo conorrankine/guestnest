@@ -134,6 +134,7 @@ def fit(
             np.array(host_cavity_dims),
             vdw_distance_matrix
         ),
+        method = 'Powell',
         options = {
             'maxiter': maxiter,
             'disp': False
