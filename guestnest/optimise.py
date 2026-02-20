@@ -217,6 +217,67 @@ def _sample_rotation(
 
     return rotation
 
+def _is_valid(
+    host_coords: np.ndarray,
+    guest_coords: np.ndarray,
+    host_cavity_dims: np.ndarray,
+    vdw_distance_matrix: np.ndarray,
+    max_cavity_pos_tol: float = 1.05,
+    min_ratio_tol: float = 0.75,
+) -> tuple[bool, dict]:
+    """
+    Evaluates whether a pose is valid based on cavity encapsulation and vdW
+    separation criteria.
+
+    Checks:
+    - cavity encapsulation: the guest atoms are located inside a symmetric
+        ellipsoidal cavity (max normalised position <= `max_cavity_pos_tol`);
+    - vdW separation: the minimum host-guest distance (scaled by the vdW
+      distance matrix) is >= `min_ratio_tol`.
+
+    Args:
+        host_coords (np.ndarray): Host molecule Cartesian coordinates.
+        guest_coords (np.ndarray): Guest molecule Cartesian coordinates.
+        host_cavity_dims (np.ndarray): 3-element array of per-axis scale
+            factors (semi-axes) for the symmetric ellipsoidal cavity.
+        vdw_distance_matrix (np.ndarray): Pairwise vdW distance matrix between
+            host molecule and guest molecule atoms.
+        max_cavity_pos_tol (float, optional): Tolerance for cavity
+            encapsulation check. Defaults to 1.05.
+        min_ratio_tol (float, optional): Tolerance for vdW separation check;
+            minimum allowed host-guest distance (scaled by the vdW distance
+            matrix). Defaults to 0.75.
+
+    Returns:
+        tuple[bool, dict]: Validity flag (True/False) and a metrics dictionary
+            containing the keys `max_cavity_pos` and `min_ratio`.
+    """
+
+    cavity_pos = np.sum(
+        ((guest_coords**2) / (host_cavity_dims**2)), axis = 1
+    )
+    max_cavity_pos = float(np.max(cavity_pos))
+
+    distance_matrix = np.linalg.norm(
+        host_coords[:, None, :] - guest_coords[None, :, :], axis = -1
+    )
+    with np.errstate(divide = 'ignore', invalid = 'ignore'):
+        ratio = distance_matrix / vdw_distance_matrix
+        ratio = ratio[np.isfinite(ratio)]
+    min_ratio = float(np.min(ratio)) if ratio.size else 0.0
+
+    metrics = {
+        'max_cavity_pos': max_cavity_pos,
+        'min_ratio': min_ratio,
+    }
+
+    valid = (
+        (max_cavity_pos <= max_cavity_pos_tol)
+        and (min_ratio >= min_ratio_tol)
+    )
+    
+    return valid, metrics
+
 def _objective_function(
     x,
     host_coords: np.ndarray,
