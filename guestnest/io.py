@@ -19,6 +19,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 #                               LIBRARY IMPORTS
 # =============================================================================
 
+from abc import ABC, abstractmethod
 from pathlib import Path
 from rdkit import Chem
 
@@ -26,9 +27,9 @@ from rdkit import Chem
 #                                   CLASSES
 # =============================================================================
 
-class MultiXYZWriter:
+class BaseMultiWriter(ABC):
     """
-    Writes multiple molecules into a single .xyz file.
+    Base class for writing multiple molecules into a single file.
 
     The output file (`output_f`) is opened in exclusive creation mode and must
     not already exist.
@@ -44,11 +45,52 @@ class MultiXYZWriter:
         self.energy_prop = energy_prop
         self._file = self.output_f.open('x')
 
+    @abstractmethod
     def write(
         self,
         mol: Chem.Mol,
         conf_id: int = -1
     ) -> None:
+        """
+        Writes a single molecule to the open output file.
+
+        Args:
+            mol (Chem.Mol): Molecule.
+            conf_id (int, optional): Conformer ID. Defaults to -1.
+        """
+        
+        pass
+
+    def close(self) -> None:
+
+        if not self._file.closed:
+            self._file.close()
+
+    def __enter__(self):
+
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+
+        self.close()
+
+class MultiXYZWriter(BaseMultiWriter):
+    """
+    Writes multiple molecules into a single .xyz file.
+    """
+
+    def write(
+        self,
+        mol: Chem.Mol,
+        conf_id: int = -1
+    ) -> None:
+        """
+        Writes a single molecule in .xyz format to the open output file.
+
+        Args:
+            mol (Chem.Mol): Molecule.
+            conf_id (int, optional): Conformer ID. Defaults to -1.
+        """
 
         write_xyz(
             self._file,
@@ -57,42 +99,23 @@ class MultiXYZWriter:
             energy_prop = self.energy_prop
         )
 
-    def close(self) -> None:
-
-        if not self._file.closed:
-            self._file.close()
-
-    def __enter__(self):
-
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-
-        self.close()
-
-class MultiSDFWriter:
+class MultiSDFWriter(BaseMultiWriter):
     """
     Writes multiple molecules into a single .sdf file.
-
-    The output file (`output_f`) is opened in exclusive creation mode and must
-    not already exist.
     """
-
-    def __init__(
-        self,
-        output_f: str | Path,
-        energy_prop: str = 'energy'
-    ):
-
-        self.output_f = Path(output_f)
-        self.energy_prop = energy_prop
-        self._file = self.output_f.open('x')
 
     def write(
         self,
         mol: Chem.Mol,
         conf_id: int = -1
     ) -> None:
+        """
+        Writes a single molecule in .sdf format to the open output file.
+
+        Args:
+            mol (Chem.Mol): Molecule.
+            conf_id (int, optional): Conformer ID. Defaults to -1.
+        """
 
         write_sdf(
             self._file,
@@ -100,19 +123,6 @@ class MultiSDFWriter:
             conf_id = conf_id,
             energy_prop = self.energy_prop
         )
-
-    def close(self) -> None:
-
-        if not self._file.closed:
-            self._file.close()
-
-    def __enter__(self):
-
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-
-        self.close()
 
 # =============================================================================
 #                                  FUNCTIONS
