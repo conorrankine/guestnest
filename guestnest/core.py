@@ -79,8 +79,6 @@ def run(
             based deduplication. Defaults to 0.1.
         energy_threshold (float, optional): Energy threshold (kcal/mol) for
             energy-based deduplication. Defaults to 5E-3.
-        maxiter (int, optional): Maximum number of optimisation iterations for
-            host-guest geometry generation. Defaults to 250.
         random_seed (int | None, optional): Random seed for host-guest geometry
             generation. Defaults to None.
 
@@ -159,7 +157,9 @@ def run(
             )
         else:
             tqdm.write(
-                f'pose fitting failed'
+                f'pose fitting failed: '
+                f'objective fun. = {fit_result.opt_fun:.3f} | '
+                f'n. iter. = {fit_result.opt_nit}'
             )
 
     if host_guest_complexes:
