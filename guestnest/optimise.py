@@ -53,6 +53,7 @@ class FitResult:
 
     pose: Chem.Mol
     opt_success: bool
+    opt_nit: int
     opt_fun: float
     opt_x: np.ndarray
     valid: bool
@@ -183,6 +184,7 @@ def fit(
     return FitResult(
         pose = host_guest_complex,
         opt_success = opt.success,
+        opt_nit = opt.nit,
         opt_fun = opt.fun,
         opt_x = opt.x,
         valid = valid,
