@@ -22,6 +22,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
 from pathlib import Path
 from rdkit import Chem
+from rdkit.Chem import rdDetermineBonds
 
 # =============================================================================
 #                                   CLASSES
@@ -215,7 +216,9 @@ def read_xyz(
 
     Raises:
         RuntimeError: If `strict` is `True` and a molecule cannot be read from
-            `input_f`.
+            `input_f`;
+        RuntimeError: If `strict` is `True` and molecular connectivity cannot
+            be determined from the .xyz coordinates in `input_f`.
 
     Returns:
         Chem.Mol | None: Molecule, else `None` if reading fails and `strict` is
@@ -228,6 +231,14 @@ def read_xyz(
             f'could not read molecule from {input_f} '
             f'[Chem.MolFromXYZFile({input_f}) returned `None`]'
         )
+    if mol is not None:
+        try:
+            rdDetermineBonds.DetermineBonds(mol)
+        except Exception as e:
+            if strict:
+                raise RuntimeError(
+                    f'could not determine connectivity for {input_f}: {e}'
+                ) from e
     if mol is not None and remove_hs:
         mol = Chem.RemoveHs(mol)
 
