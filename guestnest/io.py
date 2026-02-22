@@ -271,6 +271,12 @@ def write(
     output_f = Path(output_f)
     output_suffix = output_f.suffix.lower()
 
+    if output_suffix not in {'.sdf', '.xyz'}:
+        raise ValueError(
+            f'unsupported output file extension (\'{output_f.suffix}\'); '
+            f'expected one of {{\'.xyz\', \'.sdf\'}}'
+        )
+
     with output_f.open('x') as file:
         if output_suffix == '.sdf':
             write_sdf(
@@ -279,17 +285,12 @@ def write(
                 conf_id = conf_id,
                 energy_prop = energy_prop
             )
-        elif output_suffix == '.xyz':
+        else:
             write_xyz(
                 file,
                 mol,
                 conf_id = conf_id,
                 energy_prop = energy_prop
-            )
-        else:
-            raise ValueError(
-                f'unsupported output file extension (\'{output_f.suffix}\'); '
-                f'expected one of {{\'.xyz\', \'.sdf\'}}'
             )
 
 def write_xyz(
