@@ -23,6 +23,98 @@ from pathlib import Path
 from rdkit import Chem
 
 # =============================================================================
+#                                   CLASSES
+# =============================================================================
+
+class MultiXYZWriter:
+    """
+    Writes multiple molecules into a single .xyz file.
+
+    The output file (`output_f`) is opened in exclusive creation mode and must
+    not already exist.
+    """
+
+    def __init__(
+        self,
+        output_f: str | Path,
+        energy_prop: str = 'energy'
+    ):
+
+        self.output_f = Path(output_f)
+        self.energy_prop = energy_prop
+        self._file = self.output_f.open('x')
+
+    def write(
+        self,
+        mol: Chem.Mol,
+        conf_id: int = -1
+    ) -> None:
+
+        write_xyz(
+            self._file,
+            mol,
+            conf_id = conf_id,
+            energy_prop = self.energy_prop
+        )
+
+    def close(self) -> None:
+
+        if not self._file.closed:
+            self._file.close()
+
+    def __enter__(self):
+
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+
+        self.close()
+
+class MultiSDFWriter:
+    """
+    Writes multiple molecules into a single .sdf file.
+
+    The output file (`output_f`) is opened in exclusive creation mode and must
+    not already exist.
+    """
+
+    def __init__(
+        self,
+        output_f: str | Path,
+        energy_prop: str = 'energy'
+    ):
+
+        self.output_f = Path(output_f)
+        self.energy_prop = energy_prop
+        self._file = self.output_f.open('x')
+
+    def write(
+        self,
+        mol: Chem.Mol,
+        conf_id: int = -1
+    ) -> None:
+
+        write_sdf(
+            self._file,
+            mol,
+            conf_id = conf_id,
+            energy_prop = self.energy_prop
+        )
+
+    def close(self) -> None:
+
+        if not self._file.closed:
+            self._file.close()
+
+    def __enter__(self):
+
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+
+        self.close()
+
+# =============================================================================
 #                                  FUNCTIONS
 # =============================================================================
 
