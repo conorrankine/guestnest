@@ -233,6 +233,54 @@ def read_xyz(
 
     return mol
 
+def write(
+    output_f: str | Path,
+    mol: Chem.Mol,
+    conf_id: int = -1,
+    energy_prop: str = 'energy'
+) -> None:
+    """
+    Writes a molecule to an output structure file (.xyz/.sdf) by extension.
+
+    The output file is opened in exclusive creation mode and cannot already
+    exist.
+
+    Args:
+        output_f (str | Path): Path to the output structure file.
+        mol (Chem.Mol): Molecule.
+        conf_id (int, optional): Conformer ID. Defaults to -1.
+        energy_prop (str, optional): Conformer property key containing the
+            energy value. Defaults to 'energy'.
+
+    Raises:
+        ValueError: If the output file extension is unsupported, i.e., if the
+            file suffix is not one of {'.xyz', '.sdf'}.
+    """
+
+    output_f = Path(output_f)
+    output_suffix = output_f.suffix.lower()
+
+    with output_f.open('x') as file:
+        if output_suffix == '.sdf':
+            write_sdf(
+                file,
+                mol,
+                conf_id = conf_id,
+                energy_prop = energy_prop
+            )
+        elif output_suffix == '.xyz':
+            write_xyz(
+                file,
+                mol,
+                conf_id = conf_id,
+                energy_prop = energy_prop
+            )
+        else:
+            raise ValueError(
+                f'unsupported output file extension (\'{output_f.suffix}\'); '
+                f'expected one of {{\'.xyz\', \'.sdf\'}}'
+            )
+
 def write_xyz(
     file,
     mol: Chem.Mol,
