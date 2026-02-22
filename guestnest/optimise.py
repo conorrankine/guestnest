@@ -115,8 +115,7 @@ def fit(
     guest: Chem.Mol,
     x0: np.ndarray,
     host_cavity_dims: np.ndarray,
-    vdw_scaling: float = 1.0,
-    maxiter: int = 100
+    vdw_scaling: float = 1.0
 ) -> FitResult:
     """
     Optimises a guest molecule pose inside a host molecule by minimising a two-
@@ -132,8 +131,6 @@ def fit(
             factors (semi-axes) for the symmetric ellipsoidal cavity.
         vdw_scaling (float, optional): Scaling factor applied to vdW radii when
             computing the vdW overlap penalty. Defaults to 1.0.
-        maxiter (int, optional): Maximum number of optimisation iterations.
-            Defaults to 100.
 
     Returns:
         FitResult: Dataclass containing the fitted host-guest complex (`pose`),
@@ -161,7 +158,6 @@ def fit(
         ),
         method = 'Powell',
         options = {
-            'maxiter': maxiter,
             'disp': False
         }
     )

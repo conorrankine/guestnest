@@ -51,7 +51,6 @@ def run(
     vdw_scaling: float = 1.0,
     rmsd_threshold: float = 0.1,
     energy_threshold: float = 5E-3,
-    maxiter: int = 250,
     random_seed: int | None = None
 ) -> list[Chem.Mol]:
     """
@@ -138,8 +137,7 @@ def run(
             guest,
             sample,
             host_cavity_dims,
-            vdw_scaling = vdw_scaling,
-            maxiter = maxiter
+            vdw_scaling = vdw_scaling
         )
 
         if fit_result.opt_success and fit_result.valid:

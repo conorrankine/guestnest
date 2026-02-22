@@ -128,7 +128,6 @@ def main():
         vdw_scaling = args.vdw_scaling,
         rmsd_threshold = args.rmsd_threshold,
         energy_threshold = args.energy_threshold,
-        maxiter = args.maxiter,
         random_seed = args.random_seed
     )
 
