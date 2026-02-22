@@ -23,6 +23,7 @@ import datetime
 import tqdm
 from . import optimise
 from . import deduplicate
+from .io import read, MultiSDFWriter, MultiXYZWriter
 from numpy.random import default_rng
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
@@ -44,24 +45,24 @@ def parse_args() -> Namespace:
     p = ArgumentParser()
 
     p.add_argument(
-        'host_sdf',
+        'host_f',
         type = Path,
-        help = 'path to an .sdf/mol file for the host molecule'
+        help = 'path to an input structure file containing the host molecule'
     )
     p.add_argument(
-        'guest_sdf',
+        'guest_f',
         type = Path,
-        help = 'path to an .sdf/mol file for the guest molecule'
+        help = 'path to an input structure file containing the guest molecule'
     )
     p.add_argument(
         '-o', '--output_f',
         type = Path, default = './host_guest_complex.sdf',
-        help = 'path to an output .sdf/mol file for the host-guest complex'
+        help = 'path to an output structure file for host-guest complex(es)'
     )
     p.add_argument(
         '-n', '--n_complexes',
         type = int, default = 1,
-        help = 'number of host-guest geometries to generate'
+        help = 'maximum number of host-guest geometries to generate'
     )
     p.add_argument(
         '-d', '--host_cavity_dims',
@@ -110,8 +111,18 @@ def main():
 
     args = parse_args()
 
-    host = Chem.MolFromMolFile(args.host_sdf, removeHs = False)
-    guest = Chem.MolFromMolFile(args.guest_sdf, removeHs = False)
+    output_suffix = args.output_f.suffix.lower()
+    if output_suffix == '.sdf':
+        writer_cls = MultiSDFWriter
+    elif output_suffix == '.xyz':
+        writer_cls = MultiXYZWriter
+    else:
+        raise ValueError(
+            f'unsupported output file extension: {args.output_f.suffix}; '
+            f'expected one of {{\'.sdf\', \'.xyz\'}}'
+        )
+
+    host, guest = read(args.host_f), read(args.guest_f)
     for mol, label in zip((host, guest), ('host', 'guest')):
         print(
             f'{label:<5} | '
@@ -155,9 +166,9 @@ def main():
                 host_guest_complex,
                 fixed_atoms = [i for i in range(host.GetNumAtoms())]
             )
-            host_guest_complex.SetDoubleProp(
-                'E(XTB)', optimise.eval_energy_xtb(host_guest_complex)
-            )
+            energy = optimise.eval_energy_xtb(host_guest_complex)
+            host_guest_complex.SetDoubleProp('E(XTB)', energy)
+            host_guest_complex.GetConformer().SetDoubleProp('E(XTB)', energy)
             host_guest_complexes.append(host_guest_complex)
         elif fit_result.opt_success and not fit_result.valid:
             valid_metrics = fit_result.valid_metrics
@@ -188,12 +199,10 @@ def main():
         )
         print('-' * 24)
         for i, host_guest_complex in enumerate(host_guest_complexes, start = 1):
-            print(
-                f'{i:06d}'
-                f'{host_guest_complex.GetDoubleProp("E(XTB)"):>18.6f}'
-            )
+            energy = host_guest_complex.GetDoubleProp('E(XTB)')
+            print(f'{i:06d}{energy:>18.6f}')
         print('-' * 24 + '\n')
-        with Chem.SDWriter(args.output_f) as writer:
+        with writer_cls(args.output_f, energy_prop = 'E(XTB)') as writer:
             for host_guest_complex in host_guest_complexes:
                 writer.write(host_guest_complex)
 
