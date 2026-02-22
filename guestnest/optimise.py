@@ -20,11 +20,11 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
 import numpy as np
+from dataclasses import dataclass
 from rdkit import Chem
 from scipy.stats import qmc
 from scipy.optimize import minimize
 from scipy.spatial.transform import Rotation as R
-from scipy.optimize._optimize import OptimizeResult
 from typing import Generator
 from .xtb_wrapper import XTBCalculator
 from .geometry import (
@@ -35,6 +35,28 @@ from .geometry import (
     cartesian_to_spherical,
     get_vdw_distance_matrix
 )
+
+# =============================================================================
+#                                   CLASSES
+# =============================================================================
+
+@dataclass(frozen = True, slots = True)
+class FitResult:
+    """
+    Container for host-guest fitting outputs.
+
+    Note:
+        `frozen = True` enforces shallow immutability only; mutable objects in
+        the container, e.g., `pose` (`Chem.Mol`), `opt_x` (`np.ndarray`), and
+        `valid_metrics` (`dict`), are still able to be modified in place.
+    """
+
+    pose: Chem.Mol
+    opt_success: bool
+    opt_fun: float
+    opt_x: np.ndarray
+    valid: bool
+    valid_metrics: dict[str, float]
 
 # =============================================================================
 #                                  FUNCTIONS
@@ -95,7 +117,7 @@ def fit(
     host_cavity_dims: np.ndarray,
     vdw_scaling: float = 1.0,
     maxiter: int = 100
-) -> tuple[Chem.Mol, OptimizeResult]:
+) -> FitResult:
     """
     Optimises a guest molecule pose inside a host molecule by minimising a two-
     part penalty function.
@@ -114,9 +136,12 @@ def fit(
             Defaults to 100.
 
     Returns:
-        tuple[Chem.Mol, OptimizeResult]: Combined host-guest complex assembly
-            and SciPy optimisation result instance.
+        FitResult: Dataclass containing the fitted host-guest complex (`pose`),
+            optimiser outputs (`opt_success`; `opt_fun`; `opt_x`), and pose
+            validity diagnostics (`valid`; `valid_metrics`).
     """
+
+    host_cavity_dims = np.array(host_cavity_dims)
 
     host_centred = centre(host)
     guest_centred = centre(guest)
@@ -131,7 +156,7 @@ def fit(
         args = (
             get_coords(host_centred),
             get_coords(guest_centred),
-            np.array(host_cavity_dims),
+            host_cavity_dims,
             vdw_distance_matrix
         ),
         method = 'Powell',
@@ -150,9 +175,23 @@ def fit(
     )
     set_coords(guest_centred, guest_coords_transformed)
 
+    valid, valid_metrics = _is_valid(
+        get_coords(host_centred),
+        get_coords(guest_centred),
+        host_cavity_dims,
+        vdw_distance_matrix
+    )
+
     host_guest_complex = Chem.CombineMols(host_centred, guest_centred)
     
-    return host_guest_complex, opt
+    return FitResult(
+        pose = host_guest_complex,
+        opt_success = opt.success,
+        opt_fun = opt.fun,
+        opt_x = opt.x,
+        valid = valid,
+        valid_metrics = valid_metrics
+    )
 
 def _sample_position(
     sample: np.ndarray,
