@@ -92,11 +92,6 @@ def parse_args() -> Namespace:
         help = 'energy threshold (kcal/mol) for energy-based deduplication'
     )
     p.add_argument(
-        '-i', '--maxiter',
-        type = int, default = 250,
-        help = 'max number of iterations for host-guest geometry generation'
-    )
-    p.add_argument(
         '-r', '--random_seed',
         type = int, default = None,
         help = 'random seed for host-guest geometry generation'
