@@ -54,155 +54,6 @@ def centre(
 
     return target
 
-def translate_mol(
-    mol: Chem.Mol,
-    distances: np.ndarray,
-    conf_idx: int = -1,
-    inplace: bool = False
-) -> Chem.Mol:
-    """
-    Translates a molecule in Cartesian coordinates.
-
-    Args:
-        mol (Chem.Mol): Molecule.
-        distances (np.ndarray): Translation vector ([x, y, z]) in Angstroem.
-        conf_idx (int, optional): Conformer index. Defaults to -1.
-        inplace (bool, optional): If True, the molecule is modified inplace
-            and returned; if False, a copy is created, modified, and returned.
-            Defaults to False.
-
-    Returns:
-        Chem.Mol: Translated molecule.
-    """
-    
-    target = mol if inplace else deepcopy(mol)    
-    translated_coords = translate_coords(
-        get_coords(target, conf_idx = conf_idx), distances
-    )
-    set_coords(target, translated_coords, conf_idx = conf_idx)
-
-    return target
-
-def rotate_mol(
-    mol: Chem.Mol,
-    angles: np.ndarray,
-    conf_idx: int = -1,
-    inplace: bool = False
-) -> Chem.Mol:
-    """
-    Rotates a molecule around the origin ([0.0, 0.0, 0.0]).
-
-    Args:
-        mol (Chem.Mol): Molecule.
-        angles (np.ndarray): Rotation angles ([a, b, c]) in radians.
-        conf_idx (int, optional): Conformer index. Defaults to -1.
-        inplace (bool, optional): If True, the molecule is modified inplace
-            and returned; if False, a copy is created, modified, and returned.
-            Defaults to False.
-
-    Returns:
-        Chem.Mol: Rotated molecule.
-    """
-    
-    target = mol if inplace else deepcopy(mol)    
-    rotated_coords = rotate_coords(
-        get_coords(target, conf_idx = conf_idx), angles
-    )
-    set_coords(target, rotated_coords, conf_idx = conf_idx)
-
-    return target
-
-def rotate_and_translate_mol(
-    mol: Chem.Mol,
-    angles: np.ndarray,
-    distances: np.ndarray,
-    conf_idx: int = -1,
-    inplace: bool = False
-) -> Chem.Mol:
-    """
-    Rotates (around the origin ([0.0, 0.0, 0.0])) and translates (in Cartesian
-    coordinates) a molecule sequentially.
-
-    Args:
-        mol (Chem.Mol): Molecule.
-        angles (np.ndarray): Rotation angles ([a, b, c]) in radians.
-        distances (np.ndarray): Translation vector ([x, y, z]) in Angstroem.
-        conf_idx (int, optional): Conformer index. Defaults to -1.
-        inplace (bool, optional): If True, the molecule is modified inplace
-            and returned; if False, a copy is created, modified, and returned.
-            Defaults to False.
-
-    Returns:
-        Chem.Mol: Rotated and translated molecule.
-    """
-    
-    target = mol if inplace else deepcopy(mol)    
-    target = rotate_mol(
-        target, angles, conf_idx = conf_idx, inplace = True
-    )
-    target = translate_mol(
-        target, distances, conf_idx = conf_idx, inplace = True
-    )
-
-    return target
-
-def translate_coords(
-    coords: np.ndarray,
-    distances: np.ndarray
-) -> np.ndarray:
-    """
-    Translates a set of Cartesian coordinates.
-
-    Args:
-        coords (np.ndarray): Cartesian coordinates as an array of shape (n, 3).
-        distances (np.ndarray): Translation vector ([x, y, z]).
-
-    Returns:
-        np.ndarray: Translated Cartesian coordinates as an array of shape
-            (n, 3).
-    """
-    
-    return coords + distances
-
-def rotate_coords(
-    coords: np.ndarray,
-    angles: np.ndarray,
-) -> np.ndarray:
-    """
-    Rotates a set of Cartesian coordinates around the origin ([0.0, 0.0, 0.0]).
-
-    Args:
-        coords (np.ndarray): Cartesian coordinates as an array of shape (n, 3).
-        angles (np.ndarray): Rotation angles ([a, b, c]) in radians.
-
-    Returns:
-        np.ndarray: Rotated Cartesian coordinates as an array of shape
-            (n, 3).
-    """
-    
-    return coords @ _angles_to_rotation_matrix(angles).T
-
-def rotate_and_translate_coords(
-    coords: np.ndarray,
-    angles: np.ndarray,
-    distances: np.ndarray
-) -> np.ndarray:
-    """
-    Rotates (around the origin ([0.0, 0.0, 0.0])) and translates a set of
-    Cartesian coordinates sequentially.
-
-    Args:
-        coords (np.ndarray): Cartesian coordinates as an array of shape (n, 3).
-        angles (np.ndarray): Rotation angles ([a, b, c]) in radians.
-        distances (np.ndarray): Translation vector ([x, y, z]).
-
-    Returns:
-        np.ndarray: Rotated and translated Cartesian coordinates as an array of
-            shape (n, 3).
-    """
-    
-    return translate_coords(rotate_coords(coords, angles), distances)
-
 def get_coords(
     mol: Chem.Mol,
     conf_idx: int = -1
@@ -284,44 +135,9 @@ def _set_centre_of_mass(
     
     coords_init = get_coords(mol, conf_idx = conf_idx)
     com_init = _get_centre_of_mass(mol, conf_idx = conf_idx)
+    delta = com - com_init
 
-    set_coords(
-        mol, translate_coords(coords_init, com - com_init), conf_idx = conf_idx
-    )
-
-def _angles_to_rotation_matrix(
-    angles: np.ndarray
-) -> np.ndarray:
-    """
-    Returns the 3D rotation matrix for a set of (Euler) rotation angles
-    ([a, b, c]) in radians.
-
-    Args:
-        angles (np.ndarray, optional): Rotation angles ([a, b, c]) in radians.
-
-    Returns:
-        np.ndarray: 3D rotation matrix of shape (3, 3).
-    """
-    
-    alpha, beta, gamma = angles
-
-    rx = np.array([
-        [1.0,            0.0,            0.0          ],
-        [0.0,            np.cos(alpha), -np.sin(alpha)],
-        [0.0,            np.sin(alpha),  np.cos(alpha)]
-    ])
-    ry = np.array([
-        [ np.cos(beta),  0.0,             np.sin(beta)],
-        [ 0.0,           1.0,             0.0         ],
-        [-np.sin(beta),  0.0,             np.cos(beta)]
-    ])
-    rz = np.array([
-        [np.cos(gamma), -np.sin(gamma),   0.0         ],
-        [np.sin(gamma),  np.cos(gamma),   0.0         ],
-        [0.0,            0.0,             1.0         ]
-    ])
-
-    return rz @ ry @ rx
+    set_coords(mol, coords_init + delta, conf_idx = conf_idx)
 
 def spherical_to_cartesian(
     r: float,
@@ -359,7 +175,7 @@ def cartesian_to_spherical(
     Args:
         x (float): X coordinate.
         y (float): Y coordinate.
-        z (float): X coordinate.
+        z (float): Z coordinate.
 
     Returns:
         np.ndarray: Spherical coordinates ([r, theta, phi]).
