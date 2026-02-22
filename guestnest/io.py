@@ -128,6 +128,43 @@ class MultiSDFWriter(BaseMultiWriter):
 #                                  FUNCTIONS
 # =============================================================================
 
+def read(
+    input_f: str | Path,
+    remove_hs: bool = False,
+    strict: bool = True
+) -> Chem.Mol | None:
+    """
+    Reads a molecule from an input structure file (.xyz/.sdf) by extension.
+
+    Args:
+        input_f (str | Path): Path to the input structure file.
+        remove_hs (bool, optional): If `True`, explicit hydrogens are stripped.
+            Defaults to `False`.
+        strict (bool, optional): If `True`, raises a RuntimeError when a
+            molecule cannot be read. Defaults to `True`.
+
+    Raises:
+        ValueError: If the input file extension is unsupported, i.e., if the
+            file suffix is not one of {'.xyz', '.sdf'}.
+
+    Returns:
+        Chem.Mol | None: Molecule, else `None` if reading fails and `strict` is
+            set to `False`.
+    """
+
+    input_f = Path(input_f)
+    input_suffix = input_f.suffix.lower()
+
+    if input_suffix == '.sdf':
+        return read_sdf(input_f, remove_hs = remove_hs, strict = strict)
+    elif input_suffix == '.xyz':
+        return read_xyz(input_f, remove_hs = remove_hs, strict = strict)
+    else:
+        raise ValueError(
+            f'unsupported input file extension (\'{input_f.suffix}\'); '
+            f'expected one of {{\'.xyz\', \'.sdf\'}}'
+        )
+
 def read_sdf(
     input_f: str | Path,
     remove_hs: bool = False,
