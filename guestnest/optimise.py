@@ -224,7 +224,7 @@ def _is_valid(
     vdw_distance_matrix: np.ndarray,
     max_cavity_pos_tol: float = 1.15,
     min_ratio_tol: float = 0.65,
-) -> tuple[bool, dict]:
+) -> tuple[bool, dict[str, float]]:
     """
     Evaluates whether a pose is valid based on cavity encapsulation and vdW
     separation criteria.
