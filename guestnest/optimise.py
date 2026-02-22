@@ -222,8 +222,8 @@ def _is_valid(
     guest_coords: np.ndarray,
     host_cavity_dims: np.ndarray,
     vdw_distance_matrix: np.ndarray,
-    max_cavity_pos_tol: float = 1.05,
-    min_ratio_tol: float = 0.75,
+    max_cavity_pos_tol: float = 1.15,
+    min_ratio_tol: float = 0.65,
 ) -> tuple[bool, dict]:
     """
     Evaluates whether a pose is valid based on cavity encapsulation and vdW
@@ -243,10 +243,10 @@ def _is_valid(
         vdw_distance_matrix (np.ndarray): Pairwise vdW distance matrix between
             host molecule and guest molecule atoms.
         max_cavity_pos_tol (float, optional): Tolerance for cavity
-            encapsulation check. Defaults to 1.05.
+            encapsulation check. Defaults to 1.15.
         min_ratio_tol (float, optional): Tolerance for vdW separation check;
             minimum allowed host-guest distance (scaled by the vdW distance
-            matrix). Defaults to 0.75.
+            matrix). Defaults to 0.65.
 
     Returns:
         tuple[bool, dict]: Validity flag (True/False) and a metrics dictionary
