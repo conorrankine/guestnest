@@ -124,62 +124,78 @@ def main():
 
     host_guest_complexes = []
 
-    for _ in tqdm.tqdm(
-        range(args.n_complexes),
+    samples = optimise.generate_initial_poses(
+        n_samples = args.n_complexes,
+        host_cavity_dims = args.host_cavity_dims,
+        rng = rng
+    )
+
+    for sample in tqdm.tqdm(
+        samples,
         desc = 'creating complexes',
+        total = args.n_complexes,
         bar_format = (
             '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]'
         ),
         ncols = 60
     ):
 
-        host_guest_complex, opt = optimise.random_fit(
+        fit_result = optimise.fit(
             host,
             guest,
-            maxiter = args.maxiter,
-            host_cavity_dims = args.host_cavity_dims,
+            sample,
+            args.host_cavity_dims,
             vdw_scaling = args.vdw_scaling,
-            rng = rng
+            maxiter = args.maxiter
         )
 
-        host_guest_complex = optimise.optimise_geom_xtb(
-            host_guest_complex,
-            fixed_atoms = [i for i in range(host.GetNumAtoms())]
+        if fit_result.opt_success and fit_result.valid:
+            host_guest_complex = fit_result.pose
+            host_guest_complex = optimise.optimise_geom_xtb(
+                host_guest_complex,
+                fixed_atoms = [i for i in range(host.GetNumAtoms())]
+            )
+            host_guest_complex.SetDoubleProp(
+                'E(XTB)', optimise.eval_energy_xtb(host_guest_complex)
+            )
+            host_guest_complexes.append(host_guest_complex)
+        elif fit_result.opt_success and not fit_result.valid:
+            valid_metrics = fit_result.valid_metrics
+            tqdm.tqdm.write(
+                f'pose failed validation: '
+                f'max. cavity pos. = {valid_metrics["max_cavity_pos"]:.3f} | '
+                f'min. vdW ratio = {valid_metrics["min_ratio"]:.3f}'
+            )
+        else:
+            tqdm.tqdm.write(
+                f'pose fitting failed'
+            )
+
+    if host_guest_complexes:
+        host_guest_complexes = deduplicate.by_rmsd(
+            host_guest_complexes,
+            rmsd_threshold = args.rmsd_threshold,
+            heavy_atoms_only = True
         )
-
-        host_guest_complex.SetDoubleProp(
-            'E(XTB)', optimise.eval_energy_xtb(host_guest_complex)
+        host_guest_complexes = deduplicate.by_energy(
+            host_guest_complexes,
+            energy_threshold = args.energy_threshold
         )
-
-        host_guest_complexes.append(host_guest_complex)
-
-    host_guest_complexes = deduplicate.by_rmsd(
-        host_guest_complexes,
-        rmsd_threshold = args.rmsd_threshold,
-        heavy_atoms_only = True
-    )
-
-    host_guest_complexes = deduplicate.by_energy(
-        host_guest_complexes,
-        energy_threshold = args.energy_threshold
-    )
-
-    print('-' * 24)
-    print(
-        f'{"complex":<6}'
-        f'{"E(XTB) (kcal/mol)":>18}'
-    )
-    print('-' * 24)
-    for i, host_guest_complex in enumerate(host_guest_complexes, start = 1):
+        print('-' * 24)
         print(
-            f'{i:06d}'
-            f'{host_guest_complex.GetDoubleProp("E(XTB)"):>18.6f}'
+            f'{"complex":<6}'
+            f'{"E(XTB) (kcal/mol)":>18}'
         )
-    print('-' * 24 + '\n')
-
-    with Chem.SDWriter(args.output_f) as writer:
-        for host_guest_complex in host_guest_complexes:
-            writer.write(host_guest_complex)
+        print('-' * 24)
+        for i, host_guest_complex in enumerate(host_guest_complexes, start = 1):
+            print(
+                f'{i:06d}'
+                f'{host_guest_complex.GetDoubleProp("E(XTB)"):>18.6f}'
+            )
+        print('-' * 24 + '\n')
+        with Chem.SDWriter(args.output_f) as writer:
+            for host_guest_complex in host_guest_complexes:
+                writer.write(host_guest_complex)
 
     datetime_ = datetime.datetime.now()
     print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
