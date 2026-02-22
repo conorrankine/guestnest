@@ -128,6 +128,74 @@ class MultiSDFWriter(BaseMultiWriter):
 #                                  FUNCTIONS
 # =============================================================================
 
+def read_sdf(
+    input_f: str | Path,
+    remove_hs: bool = False,
+    strict: bool = True
+) -> Chem.Mol | None:
+    """
+    Reads a molecule from an .sdf file.
+
+    Args:
+        input_f (str | Path): Path to the input .sdf file.
+        remove_hs (bool, optional): If `True`, explicit hydrogens are stripped.
+            Defaults to `False`.
+        strict (bool, optional): If `True`, raises a RuntimeError when a
+            molecule cannot be read. Defaults to `True`.
+
+    Raises:
+        RuntimeError: If `strict` is `True` and a molecule cannot be read from
+            `input_f`.
+
+    Returns:
+        Chem.Mol | None: Molecule, else `None` if reading fails and `strict` is
+            set to `False`.
+    """
+
+    mol = Chem.MolFromMolFile(str(input_f), removeHs = remove_hs)
+    if mol is None and strict:
+        raise RuntimeError(
+            f'could not read molecule from {input_f} '
+            f'[Chem.MolFromMolFile({input_f}) returned `None`]'
+        )
+
+    return mol
+
+def read_xyz(
+    input_f: str | Path,
+    remove_hs: bool = False,
+    strict: bool = True
+) -> Chem.Mol | None:
+    """
+    Reads a molecule from an .xyz file.
+
+    Args:
+        input_f (str | Path): Path to the input .xyz file.
+        remove_hs (bool, optional): If `True`, explicit hydrogens are stripped.
+            Defaults to `False`.
+        strict (bool, optional): If `True`, raises a RuntimeError when a
+            molecule cannot be read. Defaults to `True`.
+
+    Raises:
+        RuntimeError: If `strict` is `True` and a molecule cannot be read from
+            `input_f`.
+
+    Returns:
+        Chem.Mol | None: Molecule, else `None` if reading fails and `strict` is
+            set to `False`.
+    """
+
+    mol = Chem.MolFromXYZFile(str(input_f))
+    if mol is None and strict:
+        raise RuntimeError(
+            f'could not read molecule from {input_f} '
+            f'[Chem.MolFromXYZFile({input_f}) returned `None`]'
+        )
+    if mol is not None and remove_hs:
+        mol = Chem.RemoveHs(mol)
+
+    return mol
+
 def write_xyz(
     file,
     mol: Chem.Mol,
