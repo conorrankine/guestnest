@@ -22,7 +22,6 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 from pathlib import Path
 from rdkit import Chem
-from tqdm import tqdm
 from .optimise import (
     generate_initial_poses,
     fit,
@@ -35,6 +34,13 @@ from .io import (
     MultiSDFWriter,
     MultiXYZWriter
 )
+
+# =============================================================================
+#                                LOGGING SETUP
+# =============================================================================
+
+import logging
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 #                                  FUNCTIONS
@@ -101,12 +107,11 @@ def run(
 
     host, guest = read(host_f), read(guest_f)
     for mol, label in zip((host, guest), ('host', 'guest')):
-        print(
+        logger.info(
             f'{label:<5} | '
             f'n. atoms: {mol.GetNumAtoms():>3} | '
             f'charge: {Chem.GetFormalCharge(mol):>3} |'
         )
-    print()
 
     rng = np.random.default_rng(random_seed)
 
@@ -120,15 +125,7 @@ def run(
         rng = rng
     )
 
-    for sample in tqdm(
-        samples,
-        desc = 'creating complexes',
-        total = n_complexes,
-        bar_format = (
-            '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]'
-        ),
-        ncols = 60
-    ):
+    for i, sample in enumerate(samples, start = 1):
 
         fit_result = fit(
             host,
@@ -139,28 +136,43 @@ def run(
         )
 
         if fit_result.opt_success and fit_result.valid:
+            logger.info(
+                f'complex {i}: fit successful | '
+                f'objective fun. = {fit_result.opt_fun:.3f} | '
+                f'n. iter. = {fit_result.opt_nit}'
+            )
             host_guest_complex = fit_result.pose
             host_guest_complex = optimise_geom_xtb(
                 host_guest_complex,
                 fixed_atoms = [i for i in range(host.GetNumAtoms())]
             )
             energy = eval_energy_xtb(host_guest_complex)
+            logger.info(
+                f'complex {i}: opt successful | '
+                f'E(XTB) = {energy:.6f} '
+            )
             host_guest_complex.SetDoubleProp('E(XTB)', energy)
             host_guest_complex.GetConformer().SetDoubleProp('E(XTB)', energy)
             host_guest_complexes.append(host_guest_complex)
         elif fit_result.opt_success and not fit_result.valid:
             valid_metrics = fit_result.valid_metrics
-            tqdm.write(
-                f'pose failed validation: '
+            logger.warning(
+                f'complex {i}: fit validation failed | '
                 f'max. cavity pos. = {valid_metrics["max_cavity_pos"]:.3f} | '
                 f'min. vdW ratio = {valid_metrics["min_ratio"]:.3f}'
             )
         else:
-            tqdm.write(
-                f'pose fitting failed: '
+            logger.warning(
+                f'complex {i}: fit failed | '
                 f'objective fun. = {fit_result.opt_fun:.3f} | '
                 f'n. iter. = {fit_result.opt_nit}'
             )
+    
+    logger.info(
+        f'complexes after fitting and optimisation: '
+        f'{len(host_guest_complexes)}/{n_complexes} '
+        f'(~{(len(host_guest_complexes)/n_complexes)*100.0:.0f}%) '
+    )
 
     if host_guest_complexes:
         host_guest_complexes = deduplicate.by_rmsd(
@@ -168,20 +180,20 @@ def run(
             rmsd_threshold = rmsd_threshold,
             heavy_atoms_only = True
         )
+        logger.info(
+            f'complexes after RMSD deduplication: '
+            f'{len(host_guest_complexes)}/{n_complexes} '
+            f'(~{(len(host_guest_complexes)/n_complexes)*100.0:.0f}%) '
+        )
         host_guest_complexes = deduplicate.by_energy(
             host_guest_complexes,
             energy_threshold = energy_threshold
         )
-        print('-' * 24)
-        print(
-            f'{"complex":<6}'
-            f'{"E(XTB) (kcal/mol)":>18}'
+        logger.info(
+            f'complexes after energy-based deduplication: '
+            f'{len(host_guest_complexes)}/{n_complexes} '
+            f'(~{(len(host_guest_complexes)/n_complexes)*100.0:.0f}%) '
         )
-        print('-' * 24)
-        for i, host_guest_complex in enumerate(host_guest_complexes, start = 1):
-            energy = host_guest_complex.GetDoubleProp('E(XTB)')
-            print(f'{i:06d}{energy:>18.6f}')
-        print('-' * 24 + '\n')
         with writer_cls(output_f, energy_prop = 'E(XTB)') as writer:
             for host_guest_complex in host_guest_complexes:
                 writer.write(host_guest_complex)

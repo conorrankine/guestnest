@@ -26,6 +26,12 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 # =============================================================================
+#                                LOGGING SETUP
+# =============================================================================
+
+import logging
+
+# =============================================================================
 #                               ARGUMENT PARSING
 # =============================================================================
 
@@ -107,8 +113,17 @@ def parse_args() -> Namespace:
 
 def main():
 
+    logging.basicConfig(
+        level = logging.INFO,
+        format = '%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+        datefmt = '%H:%M:%S',
+        force = True
+    )
+
+    logger = logging.getLogger(__name__)
+
     datetime_ = datetime.datetime.now()
-    print(f'launched @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}\n')
+    logger.info(f'launched @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
 
     args = parse_args()
 
@@ -127,7 +142,7 @@ def main():
     )
 
     datetime_ = datetime.datetime.now()
-    print(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
+    logger.info(f'finished @ {datetime_.strftime("%H:%M:%S (%Y-%m-%d)")}')
 
 # =============================================================================
 #                             PROGRAM STARTS HERE

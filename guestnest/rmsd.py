@@ -25,6 +25,13 @@ from rdkit import Chem
 from .geometry import get_coords, set_coords
 
 # =============================================================================
+#                                LOGGING SETUP
+# =============================================================================
+
+import logging
+logger = logging.getLogger(__name__)
+
+# =============================================================================
 #                                  FUNCTIONS
 # =============================================================================
 
@@ -85,7 +92,7 @@ def get_rmsd_matrix(
         np.ndarray: RMSD matrix as an array of shape (n_mols, n_mols).
     """
 
-    print('calculating the pairwise RMSD matrix:')
+    logger.debug('calculating the pairwise RMSD matrix:')
 
     if heavy_atoms_only:
         mols = [Chem.RemoveHs(mol) for mol in mols]
@@ -101,14 +108,14 @@ def get_rmsd_matrix(
         psutil.virtual_memory().available * mem_safety_fraction
     )
 
-    print(f'- available mem: {(available_mem / (1024**3)):.2f} GB')
-    print(f'- estimated mem: {(estimated_mem / (1024**3)):.2f} GB')
+    logger.debug(f'available mem: {(available_mem / (1024**3)):.2f} GB')
+    logger.debug(f'estimated mem: {(estimated_mem / (1024**3)):.2f} GB')
 
     if estimated_mem < available_mem:
-        print('- calculation method: full vectorisation\n')
+        logger.debug('method: full vectorisation')
         return _get_rmsd_matrix_vectorised(mols)
     else:
-        print('- calculation method: block vectorisation\n')
+        logger.debug('method: block vectorisation')
         block_size = _get_optimal_block_size(
             n_mols, n_atoms, available_mem
         )
