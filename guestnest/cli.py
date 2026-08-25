@@ -87,11 +87,6 @@ def parse_args() -> Namespace:
         help = 'RMSD threshold (Angstroem) RMSD-based duplication'
     )
     p.add_argument(
-        '-e', '--energy_threshold',
-        type = float, default = 5E-3,
-        help = 'energy threshold (kcal/mol) for energy-based deduplication'
-    )
-    p.add_argument(
         '-r', '--random_seed',
         type = int, default = None,
         help = 'random seed for host-guest geometry generation'
@@ -122,7 +117,6 @@ def main():
         phi_range = args.phi_range,
         vdw_scaling = args.vdw_scaling,
         rmsd_threshold = args.rmsd_threshold,
-        energy_threshold = args.energy_threshold,
         random_seed = args.random_seed
     )
 

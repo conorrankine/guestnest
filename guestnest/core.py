@@ -29,7 +29,7 @@ from .optimise import (
     optimise_geom_xtb,
     eval_energy_xtb
 )
-from . import deduplicate
+from .rmsd import deduplicate_by_rmsd
 from .io import (
     read,
     MultiSDFWriter,
@@ -50,7 +50,6 @@ def run(
     phi_range: tuple[float, float] = (0.0, 2.0 * np.pi),
     vdw_scaling: float = 1.0,
     rmsd_threshold: float = 0.1,
-    energy_threshold: float = 5E-3,
     random_seed: int | None = None
 ) -> list[Chem.Mol]:
     """
@@ -77,8 +76,6 @@ def run(
             Defaults to 1.0.
         rmsd_threshold (float, optional): RMSD threshold (Angstroem) for RMSD-
             based deduplication. Defaults to 0.1.
-        energy_threshold (float, optional): Energy threshold (kcal/mol) for
-            energy-based deduplication. Defaults to 5E-3.
         random_seed (int | None, optional): Random seed for host-guest geometry
             generation. Defaults to None.
 
@@ -163,14 +160,14 @@ def run(
             )
 
     if host_guest_complexes:
-        host_guest_complexes = deduplicate.by_rmsd(
+        host_guest_complexes = deduplicate_by_rmsd(
             host_guest_complexes,
             rmsd_threshold = rmsd_threshold,
             heavy_atoms_only = True
         )
-        host_guest_complexes = deduplicate.by_energy(
+        host_guest_complexes = sorted(
             host_guest_complexes,
-            energy_threshold = energy_threshold
+            key = lambda mol: mol.GetDoubleProp('E(XTB)')
         )
         print('-' * 24)
         print(

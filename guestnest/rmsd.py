@@ -22,7 +22,8 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 import psutil
 import numpy as np
 from rdkit import Chem
-from .geometry import get_coords, set_coords
+from rdkit.ML.Cluster import Butina
+from .geometry import get_coords
 
 # =============================================================================
 #                                  FUNCTIONS
@@ -115,6 +116,52 @@ def get_rmsd_matrix(
         return _get_rmsd_matrix_block_vectorised(
             mols, block_size = block_size
         )
+
+def deduplicate_by_rmsd(
+    mols: list[Chem.Mol],
+    rmsd_threshold: float = 0.5,
+    heavy_atoms_only: bool = False,
+    energy_property: str = 'E(XTB)'
+) -> list[Chem.Mol]:
+    """
+    Deduplicates molecules by RMSD, retaining the lowest-energy member of
+    each Butina cluster.
+
+    Args:
+        mols (list[Chem.Mol]): List of molecules.
+        rmsd_threshold (float, optional): Maximum intra-cluster RMSD in
+            Angstroem. Defaults to 0.5.
+        heavy_atoms_only (bool, optional): Ignore hydrogen atoms when
+            calculating RMSDs. Defaults to `False`.
+        energy_property (str, optional): RDKit double property containing the
+            energy used to select a cluster representative. Defaults to
+            'E(XTB)'.
+
+    Returns:
+        list[Chem.Mol]: The lowest-energy molecule from each RMSD cluster.
+    """
+
+    rmsd_matrix = get_rmsd_matrix(
+        mols,
+        heavy_atoms_only = heavy_atoms_only
+    )
+
+    clusters = Butina.ClusterData(
+        rmsd_matrix,
+        len(mols),
+        rmsd_threshold,
+        isDistData = True
+    )
+
+    keep_mols_idx = [
+        min(
+            cluster,
+            key = lambda i: mols[i].GetDoubleProp(energy_property)
+        )
+        for cluster in clusters
+    ]
+
+    return [mols[i] for i in keep_mols_idx]
 
 def _get_rmsd_matrix_vectorised(
     mols: list[Chem.Mol]
