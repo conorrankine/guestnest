@@ -81,7 +81,9 @@ class XTBCalculator:
         method: str = 'gfn2-xtb',
         engine: str = 'ancopt',
         xtb_path: str = 'xtb',
-        n_proc: int = 1
+        n_proc: int = 1,
+        charge: int | None = None,
+        uhf: int | None = None
     ):
         """
         Initialises an `XTBCalculator` instance.
@@ -97,6 +99,11 @@ class XTBCalculator:
                 'xtb'.
             n_proc (int, optional): Number of parallel processes; if 1, XTB
                 calculations are carried out in serial. Defaults to 1.
+            charge (int | None, optional): Molecular charge. If `None`, the
+                charge is inferred from RDKit formal charges. Defaults to None.
+            uhf (int | None, optional): Number of unpaired electrons. If
+                `None`, the value is inferred from RDKit radical electrons.
+                Defaults to None.
 
         Raises:
             ValueError: If the XTB method is not supported.
@@ -106,10 +113,10 @@ class XTBCalculator:
         self.conf_id = conf_id
         self.conf = mol.GetConformer(conf_id)
 
-        self.charge = sum(
+        self.charge = charge if charge is not None else sum(
             atom.GetFormalCharge() for atom in mol.GetAtoms()
         )
-        self.uhf = sum(
+        self.uhf = uhf if uhf is not None else sum(
             atom.GetNumRadicalElectrons() for atom in mol.GetAtoms()
         )
 

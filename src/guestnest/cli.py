@@ -49,6 +49,17 @@ def main(
         0.1, "--rmsd-threshold", "-t", min=0.0,
         help="RMSD deduplication threshold in angstroms.",
     ),
+    charge: int | None = typer.Option(
+        None,
+        "--charge",
+        help="Total charge of the host–guest complex.",
+    ),
+    uhf: int | None = typer.Option(
+        None,
+        "--uhf",
+        min=0,
+        help="Number of unpaired electrons in the host–guest complex.",
+    ),
     random_seed: int | None = typer.Option(
         None, "--random-seed", "-r",
         help="Random seed used for pose generation.",
@@ -66,5 +77,7 @@ def main(
         phi_range=phi_range,
         vdw_scaling=vdw_scaling,
         rmsd_threshold=rmsd_threshold,
+        charge=charge,
+        uhf=uhf,
         random_seed=random_seed,
     )

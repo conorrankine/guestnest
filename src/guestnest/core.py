@@ -49,6 +49,8 @@ def run(
     phi_range: tuple[float, float] = (0.0, 2.0 * np.pi),
     vdw_scaling: float = 1.0,
     rmsd_threshold: float = 0.1,
+    charge: int | None = None,
+    uhf: int | None = None,
     random_seed: int | None = None
 ) -> list[Chem.Mol]:
     """
@@ -75,6 +77,11 @@ def run(
             Defaults to 1.0.
         rmsd_threshold (float, optional): RMSD threshold (Angstroem) for RMSD-
             based deduplication. Defaults to 0.1.
+        charge (int | None, optional): Total charge passed to XTB. If `None`,
+            the charge is inferred from RDKit formal charges. Defaults to None.
+        uhf (int | None, optional): Number of unpaired electrons passed to XTB.
+            If `None`, the value is inferred from RDKit radical electrons.
+            Defaults to None.
         random_seed (int | None, optional): Random seed for host-guest geometry
             generation. Defaults to None.
 
@@ -145,7 +152,9 @@ def run(
 
             calculator = XTBCalculator(
                 host_guest_complex,
-                engine = 'lbfgs'
+                engine = 'lbfgs',
+                charge = charge,
+                uhf = uhf
             )
             for atom_idx in range(host.GetNumAtoms()):
                 calculator.AddFixedPoint(atom_idx)
@@ -158,7 +167,11 @@ def run(
                 )
                 continue
 
-            energy = XTBCalculator(host_guest_complex).CalcEnergy()
+            energy = XTBCalculator(
+                host_guest_complex,
+                charge = charge,
+                uhf = uhf
+            ).CalcEnergy()
             if not np.isfinite(energy):
                 n_xtb_energy_failures += 1
                 tqdm.write(
