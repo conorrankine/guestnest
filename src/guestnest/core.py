@@ -27,7 +27,7 @@ from .optimise import (
     generate_initial_poses,
     fit
 )
-from .rmsd import deduplicate_by_rmsd
+from .clustering import deduplicate_by_rmsd
 from .xtb_wrapper import XTBCalculator
 from .io import (
     read,
@@ -203,10 +203,18 @@ def run(
         raise RuntimeError('all attempted XTB calculations failed')
 
     if host_guest_complexes:
+        guest_heavy_atom_indices = [
+            atom.GetIdx()
+            for atom in host_guest_complexes[0].GetAtoms()
+            if (
+                atom.GetIdx() >= host.GetNumAtoms()
+                and atom.GetAtomicNum() != 1
+            )
+        ]
         host_guest_complexes = deduplicate_by_rmsd(
             host_guest_complexes,
-            rmsd_threshold = rmsd_threshold,
-            heavy_atoms_only = True
+            atom_indices = guest_heavy_atom_indices,
+            rmsd_threshold = rmsd_threshold
         )
         host_guest_complexes = sorted(
             host_guest_complexes,
