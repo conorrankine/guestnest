@@ -51,7 +51,7 @@ def get_rmsd(
     """
     
     if heavy_atoms_only:
-        mol1, mol2 = Chem.RemoveHs(mol1), Chem.RemoveHs(mol2)
+        mol1, mol2 = Chem.RemoveAllHs(mol1), Chem.RemoveAllHs(mol2)
 
     squared_diff = np.sum(
         (get_coords(mol1) - get_coords(mol2))**2, axis = 1
@@ -89,7 +89,7 @@ def get_rmsd_matrix(
     print('calculating the pairwise RMSD matrix:')
 
     if heavy_atoms_only:
-        mols = [Chem.RemoveHs(mol) for mol in mols]
+        mols = [Chem.RemoveAllHs(mol) for mol in mols]
 
     n_mols = len(mols)
     n_atoms = mols[0].GetNumAtoms()
