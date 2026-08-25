@@ -25,11 +25,10 @@ from rdkit import Chem
 from tqdm import tqdm
 from .optimise import (
     generate_initial_poses,
-    fit,
-    optimise_geom_xtb,
-    eval_energy_xtb
+    fit
 )
 from .rmsd import deduplicate_by_rmsd
+from .xtb_wrapper import XTBCalculator
 from .io import (
     read,
     MultiSDFWriter,
@@ -143,10 +142,15 @@ def run(
         if fit_result.opt_success and fit_result.valid:
             host_guest_complex = fit_result.pose
             n_xtb_optimisation_attempts += 1
-            optimisation_status = optimise_geom_xtb(
+
+            calculator = XTBCalculator(
                 host_guest_complex,
-                fixed_atoms = [i for i in range(host.GetNumAtoms())]
+                engine = 'lbfgs'
             )
+            for atom_idx in range(host.GetNumAtoms()):
+                calculator.AddFixedPoint(atom_idx)
+
+            optimisation_status = calculator.Minimize()
             if optimisation_status != 0:
                 n_xtb_optimisation_failures += 1
                 tqdm.write(
@@ -154,7 +158,7 @@ def run(
                 )
                 continue
 
-            energy = eval_energy_xtb(host_guest_complex)
+            energy = XTBCalculator(host_guest_complex).CalcEnergy()
             if not np.isfinite(energy):
                 n_xtb_energy_failures += 1
                 tqdm.write(

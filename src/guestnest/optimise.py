@@ -26,7 +26,6 @@ from scipy.stats import qmc
 from scipy.optimize import minimize
 from scipy.spatial.transform import Rotation as R
 from typing import Generator
-from .xtb_wrapper import XTBCalculator
 from .geometry import (
     centre,
     get_coords,
@@ -387,36 +386,6 @@ def _get_cavity_penalty(
     cavity_boundary_violations[cavity_boundary_violations < 0] = 0
 
     return np.sum(np.square(cavity_boundary_violations))    
-
-def optimise_geom_xtb(
-    mol: Chem.Mol,
-    fixed_atoms: list[int] = None
-) -> int:
-    """Optimize a molecule in place using xTB.
-
-    Returns:
-        int: The RDKit-style optimization status returned by
-            `XTBCalculator.Minimize()`; zero indicates success.
-    """
-
-    calculator = XTBCalculator(
-        mol,
-        engine = 'ancopt' if not fixed_atoms else 'lbfgs'
-    )
-
-    if fixed_atoms is not None:
-        for fixed_atom in fixed_atoms:
-            calculator.AddFixedPoint(fixed_atom)
-
-    return calculator.Minimize()
-
-def eval_energy_xtb(
-    mol: Chem.Mol
-) -> float:
-    
-    calculator = XTBCalculator(mol)
-
-    return calculator.CalcEnergy()
 
 # =============================================================================
 #                                     EOF
