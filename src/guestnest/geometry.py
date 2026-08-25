@@ -1,27 +1,28 @@
 """
 GUESTNEST
-Copyright (C) 2025  Conor D. Rankine
+Copyright (C) 2026  Conor D. Rankine
 
 This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software 
-Foundation, either Version 3 of the License, or (at your option) any later 
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either Version 3 of the License, or (at your option) any later
 version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with 
-this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # =============================================================================
 #                               LIBRARY IMPORTS
 # =============================================================================
 
+from copy import deepcopy
+
 import numpy as np
 from rdkit import Chem
-from copy import deepcopy
 
 # =============================================================================
 #                                  FUNCTIONS
@@ -46,8 +47,8 @@ def centre(
     Returns:
         Chem.Mol: Centred molecule.
     """
-    
-    target = mol if inplace else deepcopy(mol)    
+
+    target = mol if inplace else deepcopy(mol)
     _set_centre_of_mass(
         target, [0.0, 0.0, 0.0], conf_idx = conf_idx
     )
@@ -69,7 +70,7 @@ def get_coords(
     Returns:
         np.ndarray: Cartesian coordinates as an array of shape (n_atoms, 3).
     """
-    
+
     conf = mol.GetConformer(conf_idx)
     return np.array(
         [list(conf.GetAtomPosition(i)) for i in range(mol.GetNumAtoms())]
@@ -90,7 +91,7 @@ def set_coords(
             (n_atoms, 3).
         conf_idx (int, optional): Conformer index. Defaults to -1.
     """
-    
+
     conf = mol.GetConformer(conf_idx)
     for i, (x, y, z) in enumerate(coords):
         conf.SetAtomPosition(i, (x, y, z))
@@ -109,7 +110,7 @@ def _get_centre_of_mass(
     Returns:
         np.ndarray: Center of mass ([x, y, z]).
     """
-    
+
     masses = np.array([atom.GetMass() for atom in mol.GetAtoms()])
     coords = get_coords(mol, conf_idx = conf_idx)
     centre_of_mass = (
@@ -132,7 +133,7 @@ def _set_centre_of_mass(
         com (np.ndarray): Center of mass ([x, y, z]).
         conf_idx (int, optional): Conformer index. Defaults to -1.
     """
-    
+
     coords_init = get_coords(mol, conf_idx = conf_idx)
     com_init = _get_centre_of_mass(mol, conf_idx = conf_idx)
     delta = com - com_init
@@ -156,7 +157,7 @@ def spherical_to_cartesian(
     Returns:
         np.ndarray: Cartesian coordinates ([x, y, z]).
     """
-    
+
     x = r * np.sin(theta) * np.cos(phi)
     y = r * np.sin(theta) * np.sin(phi)
     z = r * np.cos(theta)
@@ -210,16 +211,16 @@ def get_vdw_distance_matrix(
         np.ndarray: Van der Waals distance matrix as an array of shape
             (n_atoms$_{mol2}$, n_atoms$_{mol1}$).
     """
-    
-    pt = Chem.GetPeriodicTable() 
-    
+
+    pt = Chem.GetPeriodicTable()
+
     mol1_vdw = np.array(
         [pt.GetRvdw(atom.GetSymbol()) for atom in mol1.GetAtoms()]
     ) * vdw_scaling
     mol2_vdw = np.array(
         [pt.GetRvdw(atom.GetSymbol()) for atom in mol2.GetAtoms()]
     ) * vdw_scaling
-    
+
     vdw_distance_matrix = mol2_vdw + mol1_vdw[:, None]
 
     return vdw_distance_matrix

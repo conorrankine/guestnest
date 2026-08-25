@@ -1,28 +1,28 @@
 """
-BULLVISO
-Copyright (C) 2024  Conor D. Rankine
+GUESTNEST
+Copyright (C) 2026  Conor D. Rankine
 
 This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software 
-Foundation, either Version 3 of the License, or (at your option) any later 
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either Version 3 of the License, or (at your option) any later
 version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with 
-this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # =============================================================================
 #                               LIBRARY IMPORTS
 # =============================================================================
 
+from pathlib import Path
 import subprocess
 import tempfile
-from typing import Optional
-from pathlib import Path
+
 from rdkit import Chem
 from rdkit.Geometry import rdGeometry
 
@@ -93,7 +93,7 @@ class XTBCalculator:
             conf_id (int, optional): Conformer ID to initialise the
                 `XTBCalculator` instance for. Defaults to -1.
             method (str, optional): XTB method. Defaults to 'gfn2-xtb'.
-            engine (str, optional): XTB optimisation engine. Defaults to 
+            engine (str, optional): XTB optimisation engine. Defaults to
                 'ancopt'.
             xtb_path (str, optional): Path to the XTB executable. Defaults to
                 'xtb'.
@@ -108,7 +108,7 @@ class XTBCalculator:
         Raises:
             ValueError: If the XTB method is not supported.
         """
-        
+
         self.mol = mol
         self.conf_id = conf_id
         self.conf = mol.GetConformer(conf_id)
@@ -131,7 +131,7 @@ class XTBCalculator:
         if engine.lower() not in self.ENGINES:
             raise ValueError(
                 f'{engine} is not a supported optimisation engine: supported '
-                f'optimisation engines include {{{", ".join(self.ENGINES)}}}'          
+                f'optimisation engines include {{{", ".join(self.ENGINES)}}}'
             )
         else:
             self.engine = self.ENGINES[engine.lower()]
@@ -151,14 +151,14 @@ class XTBCalculator:
         Returns:
             float: Energy (in kcal/mol).
         """
-        
+
         try:
             energy, _ = self._run_xtb_calculation()
             return energy * HARTREE_TO_KCALMOL
         except Exception as e:
             print(f'XTB energy calculation failed: {e}')
             return float('inf')
-        
+
     def CalcGradient(
         self
     ) -> None:
@@ -171,11 +171,11 @@ class XTBCalculator:
         Returns:
             None (temporary/placeholder return type).
         """
-        
+
         raise NotImplementedError(
-            'support for XTB gradients coming in a future version of BULLVISO'
+            'support for XTB gradients coming in a future version of GUESTNEST'
         )
-        
+
     def Minimize(
         self,
         maxIts: int = 600
@@ -189,9 +189,9 @@ class XTBCalculator:
 
         Returns:
             int: 0 if the geometry optimisation is successful, else 1 if the
-                geometry optimisation is unsucessful.
+                geometry optimisation is unsuccessful.
         """
-        
+
         try:
             energy, coords = self._run_xtb_calculation(
                 minimize = True,
@@ -203,7 +203,7 @@ class XTBCalculator:
         except Exception as e:
             print(f'XTB geometry optimisation failed: {e}')
             return 1
-        
+
     def AddFixedPoint(
         self,
         fixed_point_idx: int
@@ -218,7 +218,7 @@ class XTBCalculator:
         Raises:
             ValueError: If the atomic index is out of range.
         """
-        
+
         if fixed_point_idx < 0 or fixed_point_idx >= self.mol.GetNumAtoms():
             raise ValueError(
                 'error'
@@ -232,14 +232,14 @@ class XTBCalculator:
         Clears all atoms from the list of fixed atoms for geometry optimisation
         using XTB.
         """
-        
+
         self.fixed_atoms.clear()
 
     def _run_xtb_calculation(
         self,
         minimize: bool = False,
         max_iter: int = 600
-    ) -> tuple[float, Optional[tuple[rdGeometry.Point3D]]]:
+    ) -> tuple[float, tuple[rdGeometry.Point3D, ...] | None]:
         """
         Carries out an XTB calculation via subprocess execution in a temporary
         directory and returns the results.
@@ -254,12 +254,12 @@ class XTBCalculator:
             RuntimeError: If the XTB calculation does not finish successfully.
 
         Returns:
-            tuple[float, Optional[tuple[rdGeometry.Point3D]]]: Tuple of the XTB
-                calculation results: contains the energy (in kcal/mol) and the
-                optimised Cartesian atomic coordinates as a tuple of Point3D
-                instances if `minimize` is True, else None.
+            tuple[float, tuple[rdGeometry.Point3D, ...] | None]: Tuple of the
+                XTB calculation results: contains the energy (in kcal/mol) and
+                the optimised Cartesian atomic coordinates as a tuple of
+                Point3D instances if `minimize` is True, else None.
         """
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             Chem.MolToXYZFile(
                 self.mol,
@@ -297,7 +297,7 @@ class XTBCalculator:
                     f'\n command: {" ".join(cmd)}'
                     f'\n std.err: {result.stderr}'
                 )
-            
+
             energy = _get_xtb_energy_au(result.stdout)
 
             if minimize:
@@ -306,7 +306,7 @@ class XTBCalculator:
                 coords = None
 
             return energy, coords
-        
+
     def _write_xtb_xcontrol_file(
         self,
         xtb_xcontrol_file: str
@@ -324,11 +324,11 @@ class XTBCalculator:
         Args:
             xtb_xcontrol_file (str): Path to the XTB xcontrol file.
         """
-        
+
         with open(xtb_xcontrol_file, 'w') as f:
 
             f.write(f'$opt\n engine={self.engine}\n$end\n\n')
-            
+
             if self.fixed_atoms:
                 fixed_atoms = [
                     str(atom_idx + 1) for atom_idx in self.fixed_atoms
@@ -359,7 +359,7 @@ def _get_xtb_energy_au(
     Returns:
         float: Energy (in Hartree).
     """
-    
+
     if not xtb_output.strip():
         raise RuntimeError(
             'XTB output is empty'
@@ -403,12 +403,12 @@ def _get_gradient_from_grad_file(
     """
     # TODO: implement `_get_gradient_from_grad_file()`
     raise NotImplementedError(
-        'support for XTB gradients coming in a future version of BULLVISO'
+        'support for XTB gradients coming in a future version of GUESTNEST'
     )
 
 def _get_coords_from_xyz_file(
     xyz_file: str
-) -> tuple[rdGeometry.Point3D]:
+) -> tuple[rdGeometry.Point3D, ...]:
     """
     Returns the coordinates from an XTB .xyz file.
 
@@ -421,10 +421,11 @@ def _get_coords_from_xyz_file(
         RuntimeError: If any other exception is encountered.
 
     Returns:
-        tuple[rdGeometry.Point3D]: Tuple of Point3D instances corresponding
-            to the Cartesian atomic coordinates contained in the XTB .xyz file.
+        tuple[rdGeometry.Point3D, ...]: Tuple of Point3D instances
+            corresponding to the Cartesian atomic coordinates contained in the
+            XTB .xyz file.
     """
-    
+
     try:
         mol = Chem.MolFromXYZFile(xyz_file)
         if mol is None:

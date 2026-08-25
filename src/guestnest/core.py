@@ -1,39 +1,41 @@
 """
 GUESTNEST
-Copyright (C) 2025  Conor D. Rankine
+Copyright (C) 2026  Conor D. Rankine
 
 This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software 
-Foundation, either Version 3 of the License, or (at your option) any later 
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either Version 3 of the License, or (at your option) any later
 version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with 
-this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # =============================================================================
 #                               LIBRARY IMPORTS
 # =============================================================================
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 from rdkit import Chem
 from tqdm import tqdm
-from .optimise import (
-    generate_initial_poses,
-    fit
-)
+
 from .clustering import deduplicate_by_rmsd
-from .xtb_wrapper import XTBCalculator
 from .io import (
     read,
     MultiSDFWriter,
     MultiXYZWriter
 )
+from .optimise import (
+    generate_initial_poses,
+    fit
+)
+from .xtb_wrapper import XTBCalculator
 
 # =============================================================================
 #                                  FUNCTIONS
@@ -44,7 +46,7 @@ def run(
     guest_f: str | Path,
     output_f: str | Path = './host_guest_complex.sdf',
     n_complexes: int = 1,
-    host_cavity_dims: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    host_cavity_dims: tuple[float, float, float] = (4.0, 4.0, 4.0),
     theta_range: tuple[float, float] = (0.0, np.pi),
     phi_range: tuple[float, float] = (0.0, 2.0 * np.pi),
     vdw_scaling: float = 1.0,
@@ -64,18 +66,18 @@ def run(
         output_f (str | Path, optional): Path to the output structure file for
             generated host-guest complex(es). Defaults to
             './host_guest_complex.sdf'.
-        n_complexes (int, optional): Maximum number of host-guest geometries to
+        n_complexes (int, optional): Number of initial host-guest poses to
             generate. Defaults to 1.
         host_cavity_dims (tuple[float, float, float], optional): 3-element array
-            of per-axis scale factors (semi-axes; Angstroem) for the symmetric
-            ellipsoidal cavity. Defaults to the unit cube ([1.0, 1.0, 1.0]).
+            of per-axis scale factors (semi-axes; angstroms) for the symmetric
+            ellipsoidal cavity. Defaults to ([4.0, 4.0, 4.0]).
         theta_range (tuple[float, float], optional): Zenith (θ) angle limits
             (radians; 0 = +Z). Defaults to (0.0, π).
         phi_range (tuple[float, float], optional): Azimuthal (φ) angle limits
             (radians). Defaults to (0.0, 2π).
         vdw_scaling (float, optional): Scaling factor for van der Waals radii.
             Defaults to 1.0.
-        rmsd_threshold (float, optional): RMSD threshold (Angstroem) for RMSD-
+        rmsd_threshold (float, optional): RMSD threshold (angstroms) for RMSD-
             based deduplication. Defaults to 0.1.
         charge (int | None, optional): Total charge passed to XTB. If `None`,
             the charge is inferred from RDKit formal charges. Defaults to None.

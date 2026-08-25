@@ -1,6 +1,6 @@
 """
 GUESTNEST
-Copyright (C) 2025  Conor D. Rankine
+Copyright (C) 2026  Conor D. Rankine
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -15,10 +15,17 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
+# =============================================================================
+#                               LIBRARY IMPORTS
+# =============================================================================
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.ML.Cluster import Butina
 
+# =============================================================================
+#                                  FUNCTIONS
+# =============================================================================
 
 def deduplicate_by_rmsd(
     mols: list[Chem.Mol],
@@ -35,7 +42,7 @@ def deduplicate_by_rmsd(
         mols (list[Chem.Mol]): Molecules with identical atom ordering.
         atom_indices (list[int]): Atom indices to include in RMSD calculations.
         rmsd_threshold (float, optional): Butina clustering threshold in
-            Angstroem. Defaults to 0.5.
+            angstroms. Defaults to 0.5.
         energy_property (str, optional): RDKit double property used to select
             the cluster representative. Defaults to 'E(XTB)'.
 
@@ -104,3 +111,7 @@ def _select_atoms(
             editable_mol.RemoveAtom(atom_idx)
 
     return editable_mol.GetMol()
+
+# =============================================================================
+#                                     EOF
+# =============================================================================

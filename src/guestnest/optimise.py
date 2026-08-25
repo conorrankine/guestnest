@@ -1,31 +1,33 @@
 """
 GUESTNEST
-Copyright (C) 2025  Conor D. Rankine
+Copyright (C) 2026  Conor D. Rankine
 
 This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software 
-Foundation, either Version 3 of the License, or (at your option) any later 
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either Version 3 of the License, or (at your option) any later
 version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with 
-this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 # =============================================================================
 #                               LIBRARY IMPORTS
 # =============================================================================
 
-import numpy as np
 from dataclasses import dataclass
+from typing import Generator
+
+import numpy as np
 from rdkit import Chem
-from scipy.stats import qmc
 from scipy.optimize import minimize
 from scipy.spatial.transform import Rotation as R
-from typing import Generator
+from scipy.stats import qmc
+
 from .geometry import (
     centre,
     get_coords,
@@ -67,11 +69,11 @@ def generate_initial_poses(
     host_cavity_dims: np.ndarray | None = None,
     theta_range: tuple[float, float] = (0.0, np.pi),
     phi_range: tuple[float, float] = (0.0, 2.0 * np.pi),
-    rng: np.random.Generator = None
+    rng: np.random.Generator | None = None
 ) -> Generator[np.ndarray, None, None]:
     """
     Yields quasi-random poses inside a symmetric ellipsoidal cavity.
-    
+
     Uses a Sobol sequence sampler for low-discrepancy sampling of:
     - Cartesian positions ([x, y, z]) within the symmetric ellipsoidal cavity,
       optionally constrained by zenith (θ) and azimuthal (φ) angular ranges;
@@ -81,7 +83,7 @@ def generate_initial_poses(
         n_samples (int): Number of initial poses to generate.
         host_cavity_dims (np.ndarray | None, optional): 3-element array of
             per-axis scale factors (semi-axes) for the symmetric ellipsoidal
-            cavity. Defaults to the unit cube ([1.0, 1.0, 1.0]).
+            cavity. Defaults to the unit sphere ([1.0, 1.0, 1.0]).
         theta_range (tuple[float, float], optional): Zenith (θ) angle limits
             (radians; 0 = +Z). Defaults to (0.0, π).
         phi_range (tuple[float, float], optional): Azimuthal (φ) angle limits
@@ -95,7 +97,7 @@ def generate_initial_poses(
             Cartesian position vector ([x, y, z]) and rotation vector
             ([rx, ry, rz]) that define the quasi-random pose.
     """
-    
+
     if host_cavity_dims is None:
         host_cavity_dims = np.array([1.0, 1.0, 1.0])
 
@@ -179,7 +181,7 @@ def fit(
     )
 
     host_guest_complex = Chem.CombineMols(host_centred, guest_centred)
-    
+
     return FitResult(
         pose = host_guest_complex,
         opt_success = opt.success,
@@ -215,7 +217,7 @@ def _sample_position(
 
     theta_min, theta_max = theta_range
     phi_min, phi_max = phi_range
-    
+
     u1, u2, u3 = sample
     r = u1 ** (1.0 / 3.0)
     theta = np.arccos(
@@ -240,7 +242,7 @@ def _sample_rotation(
     Returns:
         np.ndarray: Rotation vector ([rx, ry, rz]).
     """
-    
+
     u1, u2, u3 = sample
     quat = np.array([
         np.sqrt(1 - u1) * np.sin(2 * np.pi * u2),
@@ -311,7 +313,7 @@ def _is_valid(
         (max_cavity_pos <= max_cavity_pos_tol)
         and (min_ratio >= min_ratio_tol)
     )
-    
+
     return valid, metrics
 
 def _objective_function(
@@ -343,7 +345,7 @@ def _penalty_function(
     vdw_distance_matrix: np.ndarray,
     return_components: bool = False
 ) -> float | tuple[float]:
-    
+
     overlap_penalty = _get_overlap_penalty(
         host_coords, guest_coords, vdw_distance_matrix
     )
@@ -377,7 +379,7 @@ def _get_cavity_penalty(
     guest_coords: np.ndarray,
     host_cavity_dims: np.ndarray
 ) -> float:
-    
+
     cavity_pos = np.sum(
         ((guest_coords**2) / (host_cavity_dims**2)), axis = 1
     )
@@ -385,7 +387,7 @@ def _get_cavity_penalty(
     cavity_boundary_violations = cavity_pos - 1
     cavity_boundary_violations[cavity_boundary_violations < 0] = 0
 
-    return np.sum(np.square(cavity_boundary_violations))    
+    return np.sum(np.square(cavity_boundary_violations))
 
 # =============================================================================
 #                                     EOF
