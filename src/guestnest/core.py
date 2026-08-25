@@ -23,7 +23,6 @@ from pathlib import Path
 
 import numpy as np
 from rdkit import Chem
-from tqdm import tqdm
 
 from .clustering import deduplicate_by_rmsd
 from .io import (
@@ -130,15 +129,9 @@ def run(
         rng = rng
     )
 
-    for sample in tqdm(
-        samples,
-        desc = 'creating complexes',
-        total = n_complexes,
-        bar_format = (
-            '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]'
-        ),
-        ncols = 60
-    ):
+    for pose_idx, sample in enumerate(samples, start = 1):
+        pose_label = f'pose {pose_idx:06d}/{n_complexes:06d}'
+        print(f'{pose_label} | started', flush = True)
 
         fit_result = fit(
             host,
@@ -164,8 +157,9 @@ def run(
             optimisation_status = calculator.Minimize()
             if optimisation_status != 0:
                 n_xtb_optimisation_failures += 1
-                tqdm.write(
-                    'XTB geometry optimisation failed; discarding pose'
+                print(
+                    f'{pose_label} | XTB geometry optimisation failed',
+                    flush = True
                 )
                 continue
 
@@ -176,28 +170,35 @@ def run(
             ).CalcEnergy()
             if not np.isfinite(energy):
                 n_xtb_energy_failures += 1
-                tqdm.write(
-                    'XTB energy calculation failed; discarding pose'
+                print(
+                    f'{pose_label} | XTB energy calculation failed',
+                    flush = True
                 )
                 continue
 
             host_guest_complex.SetDoubleProp('E(XTB)', energy)
             host_guest_complex.GetConformer().SetDoubleProp('E(XTB)', energy)
             host_guest_complexes.append(host_guest_complex)
+            print(
+                f'{pose_label} | accepted | E(XTB) = {energy:.6f} kcal/mol',
+                flush = True
+            )
         elif fit_result.opt_success and not fit_result.valid:
             n_validation_failures += 1
             valid_metrics = fit_result.valid_metrics
-            tqdm.write(
-                f'pose failed validation: '
+            print(
+                f'{pose_label} | failed validation | '
                 f'max. cavity pos. = {valid_metrics["max_cavity_pos"]:.3f} | '
-                f'min. vdW ratio = {valid_metrics["min_ratio"]:.3f}'
+                f'min. vdW ratio = {valid_metrics["min_ratio"]:.3f}',
+                flush = True
             )
         else:
             n_fit_failures += 1
-            tqdm.write(
-                f'pose fitting failed: '
+            print(
+                f'{pose_label} | fitting failed | '
                 f'objective fun. = {fit_result.opt_fun:.3f} | '
-                f'n. iter. = {fit_result.opt_nit}'
+                f'n. iter. = {fit_result.opt_nit}',
+                flush = True
             )
 
     print(
