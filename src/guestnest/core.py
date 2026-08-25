@@ -108,6 +108,11 @@ def run(
     rng = np.random.default_rng(random_seed)
 
     host_guest_complexes: list[Chem.Mol] = []
+    n_fit_failures = 0
+    n_validation_failures = 0
+    n_xtb_optimisation_attempts = 0
+    n_xtb_optimisation_failures = 0
+    n_xtb_energy_failures = 0
 
     samples = generate_initial_poses(
         n_samples = n_complexes,
@@ -137,15 +142,31 @@ def run(
 
         if fit_result.opt_success and fit_result.valid:
             host_guest_complex = fit_result.pose
-            host_guest_complex = optimise_geom_xtb(
+            n_xtb_optimisation_attempts += 1
+            optimisation_status = optimise_geom_xtb(
                 host_guest_complex,
                 fixed_atoms = [i for i in range(host.GetNumAtoms())]
             )
+            if optimisation_status != 0:
+                n_xtb_optimisation_failures += 1
+                tqdm.write(
+                    'XTB geometry optimisation failed; discarding pose'
+                )
+                continue
+
             energy = eval_energy_xtb(host_guest_complex)
+            if not np.isfinite(energy):
+                n_xtb_energy_failures += 1
+                tqdm.write(
+                    'XTB energy calculation failed; discarding pose'
+                )
+                continue
+
             host_guest_complex.SetDoubleProp('E(XTB)', energy)
             host_guest_complex.GetConformer().SetDoubleProp('E(XTB)', energy)
             host_guest_complexes.append(host_guest_complex)
         elif fit_result.opt_success and not fit_result.valid:
+            n_validation_failures += 1
             valid_metrics = fit_result.valid_metrics
             tqdm.write(
                 f'pose failed validation: '
@@ -153,11 +174,29 @@ def run(
                 f'min. vdW ratio = {valid_metrics["min_ratio"]:.3f}'
             )
         else:
+            n_fit_failures += 1
             tqdm.write(
                 f'pose fitting failed: '
                 f'objective fun. = {fit_result.opt_fun:.3f} | '
                 f'n. iter. = {fit_result.opt_nit}'
             )
+
+    print(
+        'workflow summary:\n'
+        f'- requested poses: {n_complexes}\n'
+        f'- pose fitting failures: {n_fit_failures}\n'
+        f'- pose validation failures: {n_validation_failures}\n'
+        f'- XTB optimisation failures: {n_xtb_optimisation_failures}\n'
+        f'- XTB energy failures: {n_xtb_energy_failures}\n'
+        f'- accepted before RMSD deduplication: {len(host_guest_complexes)}\n'
+    )
+
+    n_xtb_failures = n_xtb_optimisation_failures + n_xtb_energy_failures
+    if (
+        n_xtb_optimisation_attempts > 0
+        and n_xtb_failures == n_xtb_optimisation_attempts
+    ):
+        raise RuntimeError('all attempted XTB calculations failed')
 
     if host_guest_complexes:
         host_guest_complexes = deduplicate_by_rmsd(

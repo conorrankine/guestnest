@@ -391,7 +391,13 @@ def _get_cavity_penalty(
 def optimise_geom_xtb(
     mol: Chem.Mol,
     fixed_atoms: list[int] = None
-) -> Chem.Mol:
+) -> int:
+    """Optimize a molecule in place using xTB.
+
+    Returns:
+        int: The RDKit-style optimization status returned by
+            `XTBCalculator.Minimize()`; zero indicates success.
+    """
 
     calculator = XTBCalculator(
         mol,
@@ -401,10 +407,8 @@ def optimise_geom_xtb(
     if fixed_atoms is not None:
         for fixed_atom in fixed_atoms:
             calculator.AddFixedPoint(fixed_atom)
-            
-    calculator.Minimize()
 
-    return mol
+    return calculator.Minimize()
 
 def eval_energy_xtb(
     mol: Chem.Mol
