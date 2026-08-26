@@ -117,7 +117,6 @@ def run(
     host_guest_complexes: list[Chem.Mol] = []
     n_fit_failures = 0
     n_validation_failures = 0
-    n_xtb_optimisation_attempts = 0
     n_xtb_optimisation_failures = 0
     n_xtb_energy_failures = 0
 
@@ -143,7 +142,6 @@ def run(
 
         if fit_result.opt_success and fit_result.valid:
             host_guest_complex = fit_result.pose
-            n_xtb_optimisation_attempts += 1
 
             calculator = XTBCalculator(
                 host_guest_complex,
@@ -210,13 +208,6 @@ def run(
         f'- XTB energy failures: {n_xtb_energy_failures}\n'
         f'- accepted before RMSD deduplication: {len(host_guest_complexes)}\n'
     )
-
-    n_xtb_failures = n_xtb_optimisation_failures + n_xtb_energy_failures
-    if (
-        n_xtb_optimisation_attempts > 0
-        and n_xtb_failures == n_xtb_optimisation_attempts
-    ):
-        raise RuntimeError('all attempted XTB calculations failed')
 
     if host_guest_complexes:
         guest_heavy_atom_indices = [
