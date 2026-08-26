@@ -19,12 +19,11 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #                               LIBRARY IMPORTS
 # =============================================================================
 
-from pathlib import Path
-
 import numpy as np
 from rdkit import Chem
 
 from .clustering import deduplicate_by_rmsd
+from .config import GuestnestConfig
 from .io import (
     read,
     MultiSDFWriter,
@@ -40,70 +39,27 @@ from .xtb_wrapper import XTBCalculator
 #                                  FUNCTIONS
 # =============================================================================
 
-def run(
-    host_f: str | Path,
-    guest_f: str | Path,
-    output_f: str | Path = './host_guest_complex.sdf',
-    n_complexes: int = 1,
-    host_cavity_dims: tuple[float, float, float] = (4.0, 4.0, 4.0),
-    theta_range: tuple[float, float] = (0.0, np.pi),
-    phi_range: tuple[float, float] = (0.0, 2.0 * np.pi),
-    vdw_scaling: float = 1.0,
-    rmsd_threshold: float = 0.1,
-    charge: int | None = None,
-    uhf: int | None = None,
-    random_seed: int | None = None
-) -> list[Chem.Mol]:
+def run(config: GuestnestConfig) -> list[Chem.Mol]:
     """
     Runs the host-guest complex generation workflow.
 
     Args:
-        host_f (str | Path): Path to an input structure file for the host
-            molecule.
-        guest_f (str | Path): Path to an input structure file for the guest
-            molecule.
-        output_f (str | Path, optional): Path to the output structure file for
-            generated host-guest complex(es). Defaults to
-            './host_guest_complex.sdf'.
-        n_complexes (int, optional): Number of initial host-guest poses to
-            generate. Defaults to 1.
-        host_cavity_dims (tuple[float, float, float], optional): 3-element array
-            of per-axis scale factors (semi-axes; angstroms) for the symmetric
-            ellipsoidal cavity. Defaults to ([4.0, 4.0, 4.0]).
-        theta_range (tuple[float, float], optional): Zenith (θ) angle limits
-            (radians; 0 = +Z). Defaults to (0.0, π).
-        phi_range (tuple[float, float], optional): Azimuthal (φ) angle limits
-            (radians). Defaults to (0.0, 2π).
-        vdw_scaling (float, optional): Scaling factor for van der Waals radii.
-            Defaults to 1.0.
-        rmsd_threshold (float, optional): RMSD threshold (angstroms) for RMSD-
-            based deduplication. Defaults to 0.1.
-        charge (int | None, optional): Total charge passed to XTB. If `None`,
-            the charge is inferred from RDKit formal charges. Defaults to None.
-        uhf (int | None, optional): Number of unpaired electrons passed to XTB.
-            If `None`, the value is inferred from RDKit radical electrons.
-            Defaults to None.
-        random_seed (int | None, optional): Random seed for host-guest geometry
-            generation. Defaults to None.
+        config (GuestnestConfig): Validated run configuration.
 
     Returns:
         list[Chem.Mol]: Generated host-guest complexes after filtering and
             deduplication.
     """
 
-    output_f = Path(output_f)
-    output_suffix = output_f.suffix.lower()
-    if output_suffix == '.sdf':
-        writer_cls = MultiSDFWriter
-    elif output_suffix == '.xyz':
-        writer_cls = MultiXYZWriter
-    else:
-        raise ValueError(
-            f'unsupported output file extension: {output_f.suffix}; '
-            f'expected one of {{\'.sdf\', \'.xyz\'}}'
-        )
+    pose_config = config.pose
+    xtb_config = config.xtb
+    output_f = config.output_file
+    writer_cls = {
+        '.sdf': MultiSDFWriter,
+        '.xyz': MultiXYZWriter
+    }[output_f.suffix.lower()]
 
-    host, guest = read(host_f), read(guest_f)
+    host, guest = read(config.host_file), read(config.guest_file)
     for mol, label in zip((host, guest), ('host', 'guest')):
         print(
             f'{label:<5} | '
@@ -112,7 +68,7 @@ def run(
         )
     print()
 
-    rng = np.random.default_rng(random_seed)
+    rng = np.random.default_rng(pose_config.random_seed)
 
     host_guest_complexes: list[Chem.Mol] = []
     n_fit_failures = 0
@@ -121,23 +77,23 @@ def run(
     n_xtb_energy_failures = 0
 
     samples = generate_initial_poses(
-        n_samples = n_complexes,
-        host_cavity_dims = host_cavity_dims,
-        theta_range = theta_range,
-        phi_range = phi_range,
+        n_samples = pose_config.n_complexes,
+        host_cavity_dims = pose_config.cavity_dimensions,
+        theta_range = pose_config.theta_range,
+        phi_range = pose_config.phi_range,
         rng = rng
     )
 
     for pose_idx, sample in enumerate(samples, start = 1):
-        pose_label = f'pose {pose_idx:06d}/{n_complexes:06d}'
+        pose_label = f'pose {pose_idx:06d}/{pose_config.n_complexes:06d}'
         print(f'{pose_label} | started', flush = True)
 
         fit_result = fit(
             host,
             guest,
             sample,
-            host_cavity_dims,
-            vdw_scaling = vdw_scaling
+            pose_config.cavity_dimensions,
+            vdw_scaling = pose_config.vdw_scaling
         )
 
         if fit_result.opt_success and fit_result.valid:
@@ -146,8 +102,8 @@ def run(
             calculator = XTBCalculator(
                 host_guest_complex,
                 engine = 'lbfgs',
-                charge = charge,
-                uhf = uhf
+                charge = xtb_config.charge,
+                uhf = xtb_config.uhf
             )
             for atom_idx in range(host.GetNumAtoms()):
                 calculator.AddFixedPoint(atom_idx)
@@ -163,8 +119,8 @@ def run(
 
             energy = XTBCalculator(
                 host_guest_complex,
-                charge = charge,
-                uhf = uhf
+                charge = xtb_config.charge,
+                uhf = xtb_config.uhf
             ).CalcEnergy()
             if not np.isfinite(energy):
                 n_xtb_energy_failures += 1
@@ -201,7 +157,7 @@ def run(
 
     print(
         'workflow summary:\n'
-        f'- requested poses: {n_complexes}\n'
+        f'- requested poses: {pose_config.n_complexes}\n'
         f'- pose fitting failures: {n_fit_failures}\n'
         f'- pose validation failures: {n_validation_failures}\n'
         f'- XTB optimisation failures: {n_xtb_optimisation_failures}\n'
@@ -221,7 +177,7 @@ def run(
         host_guest_complexes = deduplicate_by_rmsd(
             host_guest_complexes,
             atom_indices = guest_heavy_atom_indices,
-            rmsd_threshold = rmsd_threshold
+            rmsd_threshold = pose_config.rmsd_threshold
         )
         host_guest_complexes = sorted(
             host_guest_complexes,

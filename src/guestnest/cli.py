@@ -24,6 +24,7 @@ from pathlib import Path
 import numpy as np
 import typer
 
+from guestnest.config import GuestnestConfig, PoseConfig, XTBConfig
 from guestnest.core import run
 
 # =============================================================================
@@ -35,62 +36,6 @@ app = typer.Typer()
 # =============================================================================
 #                                  FUNCTIONS
 # =============================================================================
-
-def _validate_cavity_dimensions(
-    value: tuple
-) -> tuple[float, float, float]:
-
-    if not all(np.isfinite(dimension) for dimension in value):
-        raise typer.BadParameter('cavity dimensions must be finite')
-    if not all(dimension > 0.0 for dimension in value):
-        raise typer.BadParameter('cavity dimensions must be greater than zero')
-
-    return value
-
-
-def _validate_theta_range(
-    value: tuple
-) -> tuple[float, float]:
-
-    theta_min, theta_max = value
-    if not all(np.isfinite(theta) for theta in value):
-        raise typer.BadParameter('theta limits must be finite')
-    if not 0.0 <= theta_min <= theta_max <= np.pi:
-        raise typer.BadParameter(
-            'theta limits must satisfy 0 <= MIN <= MAX <= pi'
-        )
-
-    return value
-
-
-def _validate_phi_range(
-    value: tuple
-) -> tuple[float, float]:
-
-    phi_min, phi_max = value
-    if not all(np.isfinite(phi) for phi in value):
-        raise typer.BadParameter('phi limits must be finite')
-    if phi_min > phi_max:
-        raise typer.BadParameter('phi limits must satisfy MIN <= MAX')
-
-    return value
-
-
-def _validate_positive_float(value: float) -> float:
-
-    if not np.isfinite(value) or value <= 0.0:
-        raise typer.BadParameter('value must be finite and greater than zero')
-
-    return value
-
-
-def _validate_nonnegative_float(value: float) -> float:
-
-    if not np.isfinite(value) or value < 0.0:
-        raise typer.BadParameter('value must be finite and non-negative')
-
-    return value
-
 
 @app.command()
 def main(
@@ -110,25 +55,22 @@ def main(
     ),
     cavity_dimensions: tuple[float, float, float] = typer.Option(
         (4.0, 4.0, 4.0), "--cavity",
-        callback = _validate_cavity_dimensions,
         help = "Ellipsoidal cavity semi-axes in angstroms: X Y Z.",
     ),
     theta_range: tuple[float, float] = typer.Option(
         (0.0, np.pi), "--theta-range",
-        callback = _validate_theta_range,
         help = "Zenith angle limits in radians.",
     ),
     phi_range: tuple[float, float] = typer.Option(
         (0.0, 2.0 * np.pi), "--phi-range",
-        callback = _validate_phi_range,
         help = "Azimuthal angle limits in radians.",
     ),
     vdw_scaling: float = typer.Option(
-        1.0, "--vdw-scaling", callback = _validate_positive_float,
+        1.0, "--vdw-scaling",
         help = "Scaling factor for van der Waals radii.",
     ),
     rmsd_threshold: float = typer.Option(
-        0.1, "--rms-threshold", callback = _validate_nonnegative_float,
+        0.1, "--rms-threshold",
         help = "RMSD deduplication threshold in angstroms.",
     ),
     charge: int | None = typer.Option(
@@ -151,20 +93,29 @@ def main(
 ) -> None:
     """Generate and optimize candidate host–guest complexes."""
 
-    run(
-        host_f = host,
-        guest_f = guest,
-        output_f = output,
-        n_complexes = n_complexes,
-        host_cavity_dims = cavity_dimensions,
-        theta_range = theta_range,
-        phi_range = phi_range,
-        vdw_scaling = vdw_scaling,
-        rmsd_threshold = rmsd_threshold,
-        charge = charge,
-        uhf = uhf,
-        random_seed = random_seed,
-    )
+    try:
+        config = GuestnestConfig(
+            host_file = host,
+            guest_file = guest,
+            output_file = output,
+            pose = PoseConfig(
+                n_complexes = n_complexes,
+                cavity_dimensions = cavity_dimensions,
+                theta_range = theta_range,
+                phi_range = phi_range,
+                vdw_scaling = vdw_scaling,
+                rmsd_threshold = rmsd_threshold,
+                random_seed = random_seed
+            ),
+            xtb = XTBConfig(
+                charge = charge,
+                uhf = uhf
+            )
+        )
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
+
+    run(config)
 
 # =============================================================================
 #                                     EOF

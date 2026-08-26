@@ -19,13 +19,19 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 #                               LIBRARY IMPORTS
 # =============================================================================
 
+from guestnest.config import GuestnestConfig, PoseConfig, XTBConfig
 from guestnest.core import run
 
 # =============================================================================
 #                                  PUBLIC API
 # =============================================================================
 
-__all__ = ["run"]
+__all__ = [
+    "GuestnestConfig",
+    "PoseConfig",
+    "XTBConfig",
+    "run"
+]
 
 # =============================================================================
 #                                     EOF
