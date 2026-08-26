@@ -63,9 +63,27 @@ def run(config: GuestnestConfig) -> list[Chem.Mol]:
     for mol, label in zip((host, guest), ('host', 'guest')):
         print(
             f'{label:<5} | '
-            f'n. atoms: {mol.GetNumAtoms():>3} | '
-            f'charge: {Chem.GetFormalCharge(mol):>3} |'
+            f'n. atoms: {mol.GetNumAtoms():>3} |'
         )
+
+    complex_charge = xtb_config.charge
+    if complex_charge is None:
+        complex_charge = sum(
+            Chem.GetFormalCharge(mol) for mol in (host, guest)
+        )
+
+    complex_uhf = xtb_config.uhf
+    if complex_uhf is None:
+        complex_uhf = sum(
+            atom.GetNumRadicalElectrons()
+            for mol in (host, guest)
+            for atom in mol.GetAtoms()
+        )
+
+    print(
+        f'complex | charge: {complex_charge:>3} | '
+        f'unpaired electrons: {complex_uhf:>3} |'
+    )
     print()
 
     rng = np.random.default_rng(pose_config.random_seed)
@@ -102,8 +120,8 @@ def run(config: GuestnestConfig) -> list[Chem.Mol]:
             calculator = XTBCalculator(
                 host_guest_complex,
                 engine = 'lbfgs',
-                charge = xtb_config.charge,
-                uhf = xtb_config.uhf
+                charge = complex_charge,
+                uhf = complex_uhf
             )
             for atom_idx in range(host.GetNumAtoms()):
                 calculator.AddFixedPoint(atom_idx)
@@ -119,8 +137,8 @@ def run(config: GuestnestConfig) -> list[Chem.Mol]:
 
             energy = XTBCalculator(
                 host_guest_complex,
-                charge = xtb_config.charge,
-                uhf = xtb_config.uhf
+                charge = complex_charge,
+                uhf = complex_uhf
             ).CalcEnergy()
             if not np.isfinite(energy):
                 n_xtb_energy_failures += 1
